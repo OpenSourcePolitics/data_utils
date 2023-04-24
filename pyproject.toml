@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "mtb-utils"
+name = "mtb_utils"
 version = "0.1.0"
 description = ""
 authors = ["THIVEND <baptiste.thivend@protonmail.com>"]
 license = "AGPLv3"
 readme = "README.md"
-packages = [{include = "mtb-utils"}]
+packages = [{include = "mtb_utils"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -15,6 +15,7 @@ metabase-api = "^0.3.0"
 [tool.poetry.scripts]
 db_changer = 'mtb_utils.main:run'
 model_changer = 'mtb_utils.main:model_changer'
+custom_changer = 'mtb_utils.main:custom_changer'
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

@@ -1,4 +1,5 @@
 from metabase_api import Metabase_API
+from pprint import pprint
 import dotenv
 import os
 
@@ -41,3 +42,16 @@ def model_changer():
             print(f"model of card {indicator_id} changed successfully")
         else:
             break
+        
+def custom_changer():
+    indicator_id = int(input('Enter card id to be modified[Enter -1 if stop wanted]: '))
+    
+    if indicator_id != -1:
+        res = mtb.get(f'/api/card/{indicator_id}')
+        pprint(res)
+        print("____________________DO YOUR OWN CHANGE _________________")
+        import pdb; pdb.set_trace()
+
+        status_code = mtb.put(f'/api/card/{indicator_id}',json=res)
+        assert status_code == 200
+        print(f"model of card {indicator_id} changed successfully")
