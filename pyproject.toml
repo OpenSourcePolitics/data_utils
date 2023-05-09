@@ -13,9 +13,10 @@ python-dotenv = "^1.0.0"
 metabase-api = "^0.3.0"
 
 [tool.poetry.scripts]
-db_changer = 'data_utils.main:run'
-model_changer = 'data_utils.main:model_changer'
-custom_changer = 'data_utils.main:custom_changer'
+db_changer = 'data_utils.card_modifier.main:db_changer'
+model_changer = 'data_utils.card_modifier.main:model_changer'
+custom_changer = 'data_utils.card_modifier.main:custom_changer'
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
