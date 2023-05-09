@@ -1,9 +1,10 @@
-# Metabase utils
-Gathers commands used at Open Source Politics to manage Metabase indicators 
-Allows data analyst to rapidly change a database of a Metabase indicator
+# Data utils
+This repository gathers all command-line tools and scripts we use at Open Source Politics to handle our work.
+
+It currently contains 
 
 ## Requirements
-1. Poetry installed 
+1. Poetry (see installation process [here](https://python-poetry.org/docs/#installation))
 2. Create a `.env` file from the `.env.example` provided with your credentials
 
 ### DB changer
