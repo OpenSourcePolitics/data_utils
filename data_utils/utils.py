@@ -4,7 +4,7 @@ from requests import sessions
 import dotenv
 
 
-config = dotenv.dotenv_values('.env.dev')
+config = dotenv.dotenv_values()
 
 
 MTB = Metabase_API(
