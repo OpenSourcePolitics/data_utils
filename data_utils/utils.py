@@ -5,11 +5,12 @@ import dotenv
 
 config = dotenv.dotenv_values()
 
-MTB =  Metabase_API(
+MTB = Metabase_API(
     config['METABASE_HOST'],
     config['METABASE_USERNAME'],
     config['METABASE_PASSWORD']
 )
+
 
 def dig(dict, keys_list):
     if len(keys_list) == 1:
@@ -17,7 +18,7 @@ def dig(dict, keys_list):
     else:
         if dict.get(keys_list[0]):
             new_dict = dict[keys_list[0]]
-            return dig(new_dict,keys_list[1:])
+            return dig(new_dict, keys_list[1:])
         else:
             return None
 
@@ -45,7 +46,3 @@ def send_rc_message(config, message, channel):
         message,
         channel=channel
     )
-
-def load_yaml(filename):
-    with open(filename,'r') as file:
-        return safe_load(file)
