@@ -13,7 +13,8 @@ It aims is to gather all of our tools as **submodules**
 git clone git@github.com:OpenSourcePolitics/data_utils.git
 ```
 2. Install dependencies : `poetry install`
-3. Create a `.env` file from the `.env.example` and fill it with your credentials
+3. Create a `.env` file from the `.env.example` and fill it with your credentials.
+4. Source your env file
 4. Follow instructions in the README of the specified repository
 
 ## List of all available functionalities
