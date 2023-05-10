@@ -51,6 +51,7 @@ class MetabaseQueryChecker:
             f"Analyzing cards from {MTB.domain}",
             f"{len(filtered_cards)} cards to be analyzed\n"
         ]
+        print(message)
         bar = self.create_progressbar(len(filtered_cards))
 
         # Check if card is working

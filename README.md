@@ -31,6 +31,10 @@ Three commands are available:
 > Allows you to verify that all cards inside a specified collection are working.
 - `poetry run query_checker`
 
+### form_automation
+> Allows you to automatically all cards for a Decidim form on Metabase
+- `poetry run form_summarize`
+
 ## Aknowledgements
 This repo would be nothing without the wrapper made by vvaezian accessible here:
 [Metabase API Python](https://github.com/vvaezian/metabase_api_python/)
