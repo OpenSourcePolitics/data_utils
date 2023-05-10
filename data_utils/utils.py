@@ -1,10 +1,10 @@
 from metabase_api import Metabase_API
 from rocketchat_API.rocketchat import RocketChat
 from requests import sessions
-import dotenv
+import os
 
 
-config = dotenv.dotenv_values()
+config = os.environ
 
 
 MTB = Metabase_API(
