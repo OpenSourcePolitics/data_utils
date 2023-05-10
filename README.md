@@ -8,9 +8,9 @@ It aims is to gather all of our tools as **submodules**
 2. Create a `.env` file from the `.env.example` provided with your credentials
 
 ## Howto
-1. Clone repository **recursively** 
+1. Clone repository 
 ```bash
-git clone --recurse-submodules git@github.com:OpenSourcePolitics/data_utils.git
+git clone git@github.com:OpenSourcePolitics/data_utils.git
 ```
 2. Follow instructions in the README of the specified repository
 
@@ -24,6 +24,7 @@ Three commands are available:
 - `poetry run db_changer` : change the database of any card. Useful if your card is based on a model which database was switched.
 - `poetry run model_changer` : change the model of any card. Requires that the provided card is a graphical one.
 - `poetry run custom_changer` : allows chirurgical modification of a card if previous commands aren't consistent.
+- `poetry run query_checker` : verify that all cards inside a collection are working.
 
 ## Aknowledgements
 This repo would be nothing without the wrapper made by vvaezian accessible here:
