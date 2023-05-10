@@ -3,7 +3,9 @@ from rocketchat_API.rocketchat import RocketChat
 from requests import sessions
 import dotenv
 
-config = dotenv.dotenv_values()
+
+config = dotenv.dotenv_values('.env.dev')
+
 
 MTB = Metabase_API(
     config['METABASE_HOST'],
@@ -20,8 +22,7 @@ def dig(dict, keys_list):
             new_dict = dict[keys_list[0]]
             return dig(new_dict, keys_list[1:])
         else:
-            return None
-
+            return {}
 
 def modify_dict(original_dict, keys_list, value):
     working_dict = original_dict
