@@ -4,15 +4,17 @@ This repository gathers all command-line tools and scripts we use at Open Source
 It aims is to gather all of our tools as **submodules**
 
 ## Requirements
-1. Poetry (see installation process [here](https://python-poetry.org/docs/#installation))
-2. Create a `.env` file from the `.env.example` provided with your credentials
+- Python
+- Poetry (see installation process [here](https://python-poetry.org/docs/#installation))
 
-## Howto
+## Setup
 1. Clone repository 
 ```bash
 git clone git@github.com:OpenSourcePolitics/data_utils.git
 ```
-2. Follow instructions in the README of the specified repository
+2. Install dependencies : `poetry install`
+3. Create a `.env` file from the `.env.example` and fill it with your credentials
+4. Follow instructions in the README of the specified repository
 
 ## List of all available functionalities
 Here's a list of all available functionalities. They are classed by folder.
