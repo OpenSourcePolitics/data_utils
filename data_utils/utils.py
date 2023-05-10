@@ -24,6 +24,7 @@ def dig(dict, keys_list):
         else:
             return {}
 
+
 def modify_dict(original_dict, keys_list, value):
     working_dict = original_dict
     for key in keys_list[:-1]:
@@ -47,3 +48,39 @@ def send_rc_message(config, message, channel):
         message,
         channel=channel
     )
+
+
+def create_dashboard(name, collection_id):
+    res = MTB.post(
+        "/api/dashboard",
+        json={
+            'name': name,
+            'collection_id': collection_id,
+            'collection_position':1
+        }
+    )
+    
+    return res
+
+
+def add_cards_to_dashboard(dashboard, chart_list):
+    for chart, created_chart in chart_list:
+        res = MTB.post(
+            f"/api/dashboard/{dashboard['id']}/cards",
+            json={
+                'cardId':created_chart['id'],
+                'row':chart.row,
+                'col':chart.col,
+                'size_x':chart.size_x,
+                'size_y':chart.size_y
+            }
+        )
+        assert res is not False
+
+def get_customer_collection_id(name):
+    return MTB.get_item_id('collection', name)
+
+
+def get_answer_model_id(customer_name, model_name='Réponses aux questionnaires'):
+    models_collection = MTB.get_item_id('collection', f'MODÈLES - {customer_name}', collection_name=customer_name)
+    return MTB.get_item_id('card', model_name, collection_id=models_collection)
