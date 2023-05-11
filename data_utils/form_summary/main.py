@@ -5,14 +5,16 @@ from ..utils import (
     get_customer_collection_id,
     get_answer_model_id
 )
-from . import credentials
+
 
 def make_summary():
     customer_collection_name = input("Enter name of the customer collection: ")
     form_id = int(input("Enter ID of the Decidim form: "))
     form_name = input("Enter name of the form (used for dashboard creation): ")
-    lang = input("Enter language of the customer[fr/en; default is fr]: ") or 'fr'
-    
+    lang = (
+        input("Enter language of the customer[fr/en; default is fr]: ") or 'fr'
+    )
+
     collection_id = get_customer_collection_id(customer_collection_name)
     answer_model_id = get_answer_model_id(customer_collection_name)
 

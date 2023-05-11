@@ -1,32 +1,32 @@
-from metabase_api import Metabase_API
 from .card_creation import (
     Filter,
     Aggregation,
     Fields,
     Order,
-    Chart,
     PieChart,
     TableChart,
     BarChart,
     HorizontalBarChart
 )
-from pprint import pprint
 from ..utils import MTB
 
-#print (mtb.get("/api/collection/")[0].keys())
 
 class FormsSummary:
     def __init__(self, credentials):
         self.credentials = credentials
         self.form_id = credentials['FORM_ID']
-        
+
         self.language = credentials['LANGUAGE']
         self.get_database_id()
-        
+
         # Create collection for everything
-        res = MTB.create_collection(credentials['FORM_NAME'],parent_collection_id=credentials['COLLECTION_ID'], return_results=True)
+        res = MTB.create_collection(
+            credentials['FORM_NAME'],
+            parent_collection_id=credentials['COLLECTION_ID'],
+            return_results=True
+        )
         self.collection_id = res['id']
-        
+
         self.create_form_model(
             credentials['ANSWERS_MODEL_ID'],
             name=credentials['FORM_NAME'],
@@ -35,18 +35,22 @@ class FormsSummary:
         self.get_questions_parameters()
 
     def get_database_id(self):
-        self.database_id = MTB.get_item_info('card', self.credentials['ANSWERS_MODEL_ID'])["database_id"]
+        self.database_id = MTB.get_item_info(
+            'card',
+            self.credentials['ANSWERS_MODEL_ID']
+        )["database_id"]
 
     # TODO : move to table chart with dataset = True
-    def create_form_model(self, answers_model_id, name="MODEL - My wonderful form", collection_id=0):
+    def create_form_model(self, answers_model_id, name, collection_id=0):
         params = {
             'name': name,
             'display': 'table',
             'dataset': True,
             'dataset_query': {
                 'database': self.database_id,
-                'query': 
-                    {'filter': 
+                'query':
+                    {
+                        'filter':
                         [
                             '=',
                             [
@@ -62,7 +66,7 @@ class FormsSummary:
             },
             'collection_id': collection_id
         }
-       
+
         res = MTB.create_card(custom_json=params, return_card=True)
         self.form_model_info = res
         self.form_model_id = res['id']
@@ -71,16 +75,22 @@ class FormsSummary:
         import pandas as pd
         res = MTB.get_card_data(card_id=self.form_model_id)
         df = pd.DataFrame(res)
-        
+
         if self.language == 'fr':
-            df = df[['Titre de la question', 'Type de question', 'Position']].drop_duplicates()
+            df = df[
+                ['Titre de la question', 'Type de question', 'Position']
+            ].drop_duplicates()
         elif self.language == 'en':
-            df = df[['question_title', 'question_type', 'position']].drop_duplicates()
+            df = df[
+                ['question_title', 'question_type', 'position']
+            ].drop_duplicates()
         else:
-            raise NotImplementedError("Provided language is not implemented yet")
-        
+            raise NotImplementedError(
+                "Provided language is not implemented yet"
+            )
+
         self.questions_parameters = df.values.tolist()
-        
+
     def create_question_summary(self):
         chart_list = []
         for question in self.questions_parameters:
@@ -92,7 +102,9 @@ class FormsSummary:
                 chart = TableChart(question_name, self)
                 chart.set_filters(chart_filter)
                 chart.set_filters(Filter('!=', 'answer', 'Pas de réponse'))
-                chart.set_fields(Fields([{'name':'answer', 'type': 'type/Text'}]))
+                chart.set_fields(
+                    Fields([{'name': 'answer', 'type': 'type/Text'}])
+                )
 
             elif question_type in ["single_option", "multiple_option"]:
                 chart = PieChart(question_name, self)
@@ -100,7 +112,7 @@ class FormsSummary:
                 chart.set_aggregation(
                     Aggregation(
                         ['count'],
-                        Fields([{'name':'answer', 'type': 'type/Text'}])
+                        Fields([{'name': 'answer', 'type': 'type/Text'}])
                     )
                 )
             elif question_type in ["matrix_single", "matrix_multiple"]:
@@ -111,8 +123,11 @@ class FormsSummary:
                         ['count'],
                         Fields(
                             [
-                                {'name':'sub_matrix_question', 'type':'type/Text'},
-                                {'name':'answer', 'type': 'type/Text'}
+                                {
+                                    'name': 'sub_matrix_question',
+                                    'type': 'type/Text'
+                                },
+                                {'name': 'answer', 'type': 'type/Text'}
                             ]
                         )
                     )
@@ -121,7 +136,10 @@ class FormsSummary:
                     [{
                         "name": "visualization_settings",
                         "value": {
-                            "graph.dimensions": ["sub_matrix_question", "answer"],
+                            "graph.dimensions": [
+                                "sub_matrix_question",
+                                "answer"
+                            ],
                             "graph.metrics": ["count"]
                         }
                     }]
@@ -132,8 +150,8 @@ class FormsSummary:
                 chart.set_fields(
                     Fields(
                         [
-                            {'name':'answer', 'type': 'type/Text'},
-                            {'name':'custom_body', 'type':'type/*'}
+                            {'name': 'answer', 'type': 'type/Text'},
+                            {'name': 'custom_body', 'type': 'type/*'}
                         ]
                     )
                 )
@@ -142,13 +160,19 @@ class FormsSummary:
                 chart.set_filters(chart_filter)
                 chart.set_aggregation(
                     Aggregation(
-                        ['sum', Fields([{'name':'sorting_points', 'type': 'type/Integer'}])],
-                        Fields([{'name':'answer', 'type': 'type/Text'}])
+                        [
+                            'sum',
+                            Fields(
+                                [
+                                    {
+                                        'name': 'sorting_points',
+                                        'type': 'type/Integer'
+                                    }
+                                ])],
+                        Fields([{'name': 'answer', 'type': 'type/Text'}])
                     )
                 )
                 chart.set_order(Order('desc'))
             created_chart = chart.create_chart()
-            chart_list.append([chart,created_chart])
-        # else: 
-        #     print(f"Ce type de diagramme n'est pas pris en compte: {question_type}")
+            chart_list.append([chart, created_chart])
         return chart_list
