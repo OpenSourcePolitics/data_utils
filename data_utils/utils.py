@@ -5,7 +5,9 @@ import os
 
 
 config = os.environ
-
+assert config['METABASE_HOST']
+assert config['METABASE_USERNAME']
+assert config['METABASE_PASSWORD']
 
 MTB = Metabase_API(
     config['METABASE_HOST'],

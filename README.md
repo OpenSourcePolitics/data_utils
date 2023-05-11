@@ -36,6 +36,19 @@ Three commands are available:
 > Allows you to automatically all cards for a Decidim form on Metabase
 - `poetry run form_summarize`
 
+### file_import
+> Allows you to send data directly to a Postgres database that is connected to Metabase
+> ⚠️ Make sure the file you're importing is at the root of this project to be imported ⚠️
+- `poetry run file_import`
+
 ## Aknowledgements
 This repo would be nothing without the wrapper made by vvaezian accessible here:
 [Metabase API Python](https://github.com/vvaezian/metabase_api_python/)
+
+## Contribute
+- [Create an issue](https://github.com/OpenSourcePolitics/data_utils/issues) to report a bug/ask for a new feature
+- [Fork this project](https://github.com/OpenSourcePolitics/data_utils/issues) to make your changes and make a PR
+
+## License
+This software is licensed under the GNU AGPLv3, which states that **you can use, modify and redistribute this software as long as you publish the modifications under the same license.**
+For more information, check [here](https://www.gnu.org/licenses/agpl-3.0.html)

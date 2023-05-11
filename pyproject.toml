@@ -13,6 +13,9 @@ metabase-api = "^0.3.0"
 progressbar2 = "^4.2.0"
 rocketchat-api = "^1.30.0"
 pandas = "^2.0.1"
+sqlalchemy = "^2.0.13"
+psycopg2 = "^2.9.6"
+openpyxl = "^3.1.2"
 
 [tool.poetry.scripts]
 # card_changer
@@ -26,6 +29,8 @@ query_checker = 'data_utils.query_checker.main:start'
 # form_summary
 make_summary = "data_utils.form_summary.main:make_summary"
 
+# file import
+file_import = "data_utils.file_import.main:main"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
