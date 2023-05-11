@@ -1,10 +1,10 @@
 from metabase_api import Metabase_API
 from rocketchat_API.rocketchat import RocketChat
 from requests import sessions
-import dotenv
+import os
 
 
-config = dotenv.dotenv_values()
+config = os.environ
 
 
 MTB = Metabase_API(
@@ -56,10 +56,10 @@ def create_dashboard(name, collection_id):
         json={
             'name': name,
             'collection_id': collection_id,
-            'collection_position':1
+            'collection_position': 1
         }
     )
-    
+
     return res
 
 
@@ -68,19 +68,25 @@ def add_cards_to_dashboard(dashboard, chart_list):
         res = MTB.post(
             f"/api/dashboard/{dashboard['id']}/cards",
             json={
-                'cardId':created_chart['id'],
-                'row':chart.row,
-                'col':chart.col,
-                'size_x':chart.size_x,
-                'size_y':chart.size_y
+                'cardId': created_chart['id'],
+                'row': chart.row,
+                'col': chart.col,
+                'size_x': chart.size_x,
+                'size_y': chart.size_y
             }
         )
         assert res is not False
+
 
 def get_customer_collection_id(name):
     return MTB.get_item_id('collection', name)
 
 
-def get_answer_model_id(customer_name, model_name='Réponses aux questionnaires'):
-    models_collection = MTB.get_item_id('collection', f'MODÈLES - {customer_name}', collection_name=customer_name)
+def get_answer_model_id(
+    customer_name, model_name='Réponses aux questionnaires'
+):
+    models_collection = MTB.get_item_id(
+        'collection',
+        f'MODÈLES - {customer_name}', collection_name=customer_name
+    )
     return MTB.get_item_id('card', model_name, collection_id=models_collection)
