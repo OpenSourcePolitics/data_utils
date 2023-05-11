@@ -1,3 +1,6 @@
 .env
 .env.dev
 __pycache__
+*.csv
+*.xlsx
+*.json
