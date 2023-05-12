@@ -4,3 +4,4 @@ __pycache__
 *.csv
 *.xlsx
 *.json
+data_utils/tmp_scripts/*.py
