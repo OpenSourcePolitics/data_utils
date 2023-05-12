@@ -34,7 +34,7 @@ Three commands are available:
 
 ### form_automation
 > Allows you to automatically all cards for a Decidim form on Metabase
-- `poetry run form_summarize`
+- `poetry run make_summary`
 
 ### file_import
 > Allows you to send data directly to a Postgres database that is connected to Metabase
