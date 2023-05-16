@@ -24,23 +24,43 @@ Here's a list of all available functionalities. They are classed by folder.
 > Allows you to dynamically change a specific attribute of a Metabase card. Knowledge of the card description is mandatory.
 
 Three commands are available:
-- `poetry run db_changer` : change the database of any card. Useful if your card is based on a model which database was switched.
-- `poetry run model_changer` : change the model of any card. Requires that the provided card is a graphical one.
-- `poetry run custom_changer` : allows chirurgical modification of a card if previous commands aren't consistent.
+⇒ Change the database of any card. Useful if your card is based on a model which database was switched.
+```bash
+poetry run db_changer
+```
+⇒ Change the model of any card. Requires that the provided card is a graphical one.
+```bash
+poetry run model_changer
+```
+Allows chirurgical modification of a card if previous commands aren't consistent.
+```bash
+poetry run custom_changer
+```
 
 ### query_checker
 > Allows you to verify that all cards inside a specified collection are working.
-- `poetry run query_checker`
+```bash
+poetry run query_checker
+```
 
 ### form_automation
 > Allows you to automatically all cards for a Decidim form on Metabase
-- `poetry run make_summary`
+```bash
+poetry run make_summary
+```
 
 ### file_import
 > Allows you to send data directly to a Postgres database that is connected to Metabase
 > ⚠️ Make sure the file you're importing is at the root of this project to be imported ⚠️
-- `poetry run file_import`
+```bash
+poetry run file_import
+```
 
+### tmp_scripts
+> Put your temporary scripts inside this folder to run specific scripts
+```bash
+poetry run python data_utils/tmp_scripts/your_script.py
+```
 ## Aknowledgements
 This repo would be nothing without the wrapper made by vvaezian accessible here:
 [Metabase API Python](https://github.com/vvaezian/metabase_api_python/)
