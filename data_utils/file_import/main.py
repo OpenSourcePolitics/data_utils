@@ -1,11 +1,11 @@
 import sqlalchemy
 import pandas as pd
 
-from ..utils import MTB
+from ..utils import MTB, get_database_connection
 
 
 def main():
-    connection, table_name = get_database_connection()
+    connection, table_name, schema = get_database_connection()
     file_name = input("Enter file path with extension: ")
 
     if '.xlsx' in file_name:
@@ -28,37 +28,17 @@ def main():
     )
     print(f'{file_name} successfully sent to Metabase to provided database')
 
-    db_id = int(input("Enter database ID on Metabase: "))
-    MTB.post(f'/api/database/{db_id}/sync_schema')
-    print(
-        "Database successfully synchronized, "
-        "you should now see the imported tables"
-    )
-
-
-def get_database_connection():
-    db_host_and_port = input(
-        "Enter database host and port (ex: 255.42.3.12:5432): "
-    )
-    db_password = input("Enter Postgres database password: ")
-    db_username = input("Enter Postgres database username: ")
-    db_name = input("Enter Postgres database name: ")
-
-    dbschema_wanted = (
-        input("Enter name of the wanted schema[default: public]: ")
-        or 'public'
-    )
-    table_name = (
-        input("Enter table_name(default : same as schema name): ")
-        or dbschema_wanted
-    )
-
-    connection = sqlalchemy.create_engine(
-        f"postgresql://{db_username}:{db_password}"
-        f"@{db_host_and_port}"
-        f"/{db_name}",
-        connect_args={'options': f'-csearch_path={dbschema_wanted},public'}
-    )
-
-    connection.connect()
-    return connection, table_name
+    try:
+        db_name = connection.engine.url.database
+        db_id = MTB.get_item_id('database', db_name)
+        MTB.post(f'/api/database/{db_id}/sync_schema')
+        print(
+            f"Database {db_name} with ID {db_id} successfully synchronized, "
+            f"you should now see the imported tables in the schema {schema} "
+            f" and table named {table_name}. "
+            f"Click here : {MTB.domain}/browse/{db_id}"
+        )
+    except Exception:
+        print(f"No database found named {db_name}")
+    
+    
