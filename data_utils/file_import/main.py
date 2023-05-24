@@ -1,11 +1,9 @@
 import sqlalchemy
 import pandas as pd
-
 from ..utils import MTB, get_database_connection
 
 
-def main():
-    connection, table_name, schema = get_database_connection()
+def get_data():
     file_name = input("Enter file path with extension: ")
 
     if '.xlsx' in file_name:
@@ -19,14 +17,19 @@ def main():
         df = pd.read_json(file_name)
     else:
         raise NotImplementedError("None implemented error")
+        
+    return df
 
-    df.to_sql(
+def main(df=pd.DataFrame()):
+    connection, table_name, schema = get_database_connection()
+    exported_df = df if not df.empty else get_data()
+    exported_df.to_sql(
         table_name,
         connection,
         if_exists='replace',
         index=False
     )
-    print(f'{file_name} successfully sent to Metabase to provided database')
+    print(f'Data successfully sent to Metabase to provided database')
 
     try:
         db_name = connection.engine.url.database

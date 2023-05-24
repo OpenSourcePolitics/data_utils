@@ -1,13 +1,14 @@
 from metabase_api import Metabase_API
 from rocketchat_API.rocketchat import RocketChat
 from requests import sessions
+import sqlalchemy
 import os
+import re
 
 
 config = os.environ
-assert config['METABASE_HOST']
-assert config['METABASE_USERNAME']
-assert config['METABASE_PASSWORD']
+if not(config.get('METABASE_HOST') and config.get('METABASE_USERNAME') and config.get('METABASE_PASSWORD')):
+    raise AssertionError("Env variables not correctly set")
 
 MTB = Metabase_API(
     config['METABASE_HOST'],
@@ -92,3 +93,53 @@ def get_answer_model_id(
         f'MODÈLES - {customer_name}', collection_name=customer_name
     )
     return MTB.get_item_id('card', model_name, collection_id=models_collection)
+
+
+def to_snake(name):
+    name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
+
+
+def parse_options(object):
+    values = (object.values.tolist()[0]).split('","')
+    values[0] = values[0][2:]
+    values[-1] = values[-1][:len(values[-1])-2]
+    for i in range(len(values)):
+        values[i] = values[i].replace('\\"', '"')
+        values[i] = values[i].strip(' ')
+    return values
+
+
+def get_database_connection():
+    config = os.environ
+    
+    try:
+        db_host_and_port = f"{config['DATABASE_HOST']}:{config['DATABASE_PORT']}"
+        db_password = config['DATABASE_PASSWORD']
+        db_username = config['DATABASE_USERNAME']
+    except KeyError:
+        db_host_and_port = input(
+            "Enter database host and port (ex: 255.42.3.12:5432): "
+        )
+        db_password = input("Enter Postgres database password: ")
+        db_username = input("Enter Postgres database username: ")
+
+    db_name = input("Enter Postgres database name: ")
+    dbschema_wanted = (
+        input("Enter name of the wanted schema[default: public]: ")
+        or 'public'
+    )
+    table_name = (
+        input("Enter table_name(default : same as schema name): ")
+        or dbschema_wanted
+    )
+
+    connection = sqlalchemy.create_engine(
+        f"postgresql://{db_username}:{db_password}"
+        f"@{db_host_and_port}"
+        f"/{db_name}",
+        connect_args={'options': f'-csearch_path={dbschema_wanted},public'}
+    )
+
+    connection.connect()
+    return connection, table_name, dbschema_wanted
