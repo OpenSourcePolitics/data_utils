@@ -98,6 +98,24 @@ files = [
 ]
 
 [[package]]
+name = "citric"
+version = "0.7.0"
+description = "A client to the LimeSurvey Remote Control API 2, written in modern Python."
+category = "main"
+optional = false
+python-versions = ">=3.7.0,<4.0.0"
+files = [
+    {file = "citric-0.7.0-py3-none-any.whl", hash = "sha256:25ae9eba292ca666211372be06485999ff1b1f65afd6bd57f4412080cc9c9dda"},
+    {file = "citric-0.7.0.tar.gz", hash = "sha256:ae1453b00cef663777c59de2f6b0413289d10a81603069744879fed42f1a4527"},
+]
+
+[package.dependencies]
+requests = ">=2.23.0,<3.0.0"
+
+[package.extras]
+docs = ["furo (>=2023.3.27,<2024.0.0)", "myst-parser (>=1.0.0,<2.0.0)", "sphinx (<7)", "sphinx-autoapi (>=2.1.0,<3.0.0)", "sphinx-autobuild (>=2021.3.14,<2022.0.0)", "sphinx-autodoc-typehints (>=1.22,<2.0)", "sphinx-copybutton (>=0.5.1,<0.6.0)"]
+
+[[package]]
 name = "et-xmlfile"
 version = "1.1.0"
 description = "An implementation of lxml.xmlfile for the standard library"
@@ -400,6 +418,21 @@ files = [
 six = ">=1.5"
 
 [[package]]
+name = "python-dotenv"
+version = "1.0.0"
+description = "Read key-value pairs from a .env file and set them as environment variables"
+category = "main"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "python-dotenv-1.0.0.tar.gz", hash = "sha256:a8df96034aae6d2d50a4ebe8216326c61c3eb64836776504fcca410e5937a3ba"},
+    {file = "python_dotenv-1.0.0-py3-none-any.whl", hash = "sha256:f5971a9226b701070a4bf2c38c89e5a3f0d64de8debda981d1db98583009122a"},
+]
+
+[package.extras]
+cli = ["click (>=5.0)"]
+
+[[package]]
 name = "python-utils"
 version = "3.5.2"
 description = "Python Utils is a module with some convenient utilities not included with the standard Python install"
@@ -600,4 +633,4 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "ac0dbd5713c76bd1800f2a3f8ef35792adca7e94e41112ec650ea4a279f96ad6"
+content-hash = "2af419571e58ab600a3a524d794769bec0ec43d3ccadb23c269e8d41292c2d94"
