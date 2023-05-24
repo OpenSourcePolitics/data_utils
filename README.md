@@ -13,8 +13,8 @@ It aims is to gather all of our tools as **submodules**
 git clone git@github.com:OpenSourcePolitics/data_utils.git
 ```
 2. Install dependencies : `poetry install`
-3. Create a `.env` file from the `.env.example` and fill it with your credentials.
-4. Source your env file
+3. Create a `.env` file from the `.env.example` and fill it with relevant credentials depending on the project you want to run.
+4. Source your env file (`source .env`)
 4. Follow instructions in the README of the specified repository
 
 ## List of all available functionalities
@@ -54,6 +54,13 @@ poetry run make_summary
 > ⚠️ Make sure the file you're importing is at the root of this project to be imported ⚠️
 ```bash
 poetry run file_import
+```
+
+### ls_import
+> Allows you to send answers from a Limesurvey instance directly to a Postgres database connected to Metabase
+> ⚠️ See dedicated README for more information ⚠️
+```bash
+poetry run ls_import
 ```
 
 ### tmp_scripts
