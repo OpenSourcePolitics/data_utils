@@ -5,6 +5,7 @@ from data_utils.utils import (
 )
 import pandas as pd
 import os
+import ast
 
 
 FILENAME = 'data'
@@ -66,7 +67,6 @@ def get_data(answer_model_id, questions_info_id, form_id):
 
 
 def pivot_answers(df_answers, df_questions_info, for_metabase):
-    import pdb; pdb.set_trace()
     questions_infos = df_questions_info[
         [
             'position',
@@ -81,134 +81,20 @@ def pivot_answers(df_answers, df_questions_info, for_metabase):
     pivoted_answers = df_answers[['session_token']].drop_duplicates()
 
     # For each question, retrieve the dataframe with the relevant columns
-    for question_infos in questions_infos[['question_title']]:
-        question_title, question_type, position = question_infos
-        df_answers_to_question = df_answers[df_answers['position'] == position][ANSWERS_COLUMNS]
+    for index, question_infos in questions_infos.iterrows():
+        df_answers_to_question = df_answers[df_answers['position'] == question_infos.position][ANSWERS_COLUMNS]
 
         pivoted_answers_to_question = pivot_answers_to_column(
             pivoted_answers[['session_token']],
             question_infos,
             df_answers_to_question
         )
-            
+
         pivoted_answers = pivoted_answers.merge(
             pivoted_answers_to_question,
             how='left',
             on='session_token'
         )
-        pdb.set_trace()
-        elif question_type in ['multiple_option']:
-            extraction = (
-                df_questions_info[
-                    df_questions_info['position'] == position
-                ]['possible_answers']
-            )
-            options = parse_options(extraction)
-            for option in options:
-                option_checked_df = filtered_df[
-                    filtered_df['answer'].str.contains(option)
-                ]
-                if for_metabase:
-                    answer_column = (
-                        f'{position}. {question_title[:30]} {option[:25]}'
-                    )
-                else:
-                    f'{position}. {question_title} {option}'
-                final_df[answer_column] = None
-                for index, row in option_checked_df.iterrows():
-                    mask = final_df['session_token'].str.contains(
-                        row['session_token']
-                    )
-                    final_df.loc[mask, answer_column] = (
-                        row.custom_body or 'Oui'
-                    )
-        # elif question_type in ['matrix_single']:
-        #     extraction = (
-        #         df_questions_info[
-        #             df_questions_info['position'] == position
-        #         ]['sub_affirmations']
-        #     )
-        #     sub_affirmations = parse_options(extraction)
-        #     for sub_affirmation in sub_affirmations:
-        #         sub_affirmation_checked = filtered_df[
-        #             filtered_df['sub_matrix_question'] == sub_affirmation
-        #         ]
-        #         if for_metabase:
-        #             answer_column = (
-        #                 f'{position}. {question_title[:30]} '
-        #                 f'{sub_affirmation[:25]}'
-        #             )
-        #         else:
-        #             f'{position}. {question_title} {sub_affirmation}'
-        #         final_df[answer_column] = None
-        #         for index, row in sub_affirmation_checked.iterrows():
-        #             mask = final_df['session_token'].str.contains(
-        #                 row['session_token']
-        #             )
-        #             final_df.loc[mask, answer_column] = row['answer']
-        # elif question_type in ['sorting']:
-        #     extraction = df_questions_info[
-        #         df_questions_info['position'] == position
-        #     ]
-        #     sorting_length = extraction[['sorting_length']].values[0][0]
-        #     for i in range(sorting_length):
-        #         if for_metabase:
-        #             answer_column = (
-        #                 f'{position}. {question_title[:40]} - Position {i}'
-        #             )
-        #         else:
-        #             answer_column = (
-        #                 f'{position}. {question_title} - Position {i}'
-        #             )
-        #         final_df[answer_column] = None
-        #     for index, row in filtered_df.iterrows():
-        #         if for_metabase:
-        #             answer_column = (
-        #                 f'{position}. {question_title[:40]}'
-        #                 ' - '
-        #                 f'Position {row["sorting_position"]}'
-        #             )
-        #         else:
-        #             answer_column = (
-        #                 f'{position}. {question_title}'
-        #                 ' - '
-        #                 f'Position {row["sorting_position"]}'
-        #             )
-        #         mask = final_df['session_token'].str.contains(
-        #             row['session_token']
-        #         )
-        #         final_df.loc[mask, answer_column] = row['answer']
-        # elif question_type in ['matrix_multiple']:
-        #     import pdb; pdb.set_trace()
-        #     extraction = (
-        #         df_questions_info[
-        #             df_questions_info['position'] == position
-        #         ]['sub_affirmations']
-        #     )
-        #     for index, row in filtered_df():
-                
-        #     sub_affirmations = parse_options(extraction)
-        #     for sub_affirmation in sub_affirmations:
-        #         sub_affirmation_checked = filtered_df[
-        #             filtered_df['sub_matrix_question'] == sub_affirmation
-        #         ]
-        #         if for_metabase:
-        #             answer_column = (
-        #                 f'{position}. {question_title[:30]} '
-        #                 f'{sub_affirmation[:25]}'
-        #             )
-        #         else:
-        #             f'{position}. {question_title} {sub_affirmation}'
-        #         final_df[answer_column] = None
-        #         for index, row in sub_affirmation_checked.iterrows():
-        #             mask = final_df['session_token'].str.contains(
-        #                 row['session_token']
-        #             )
-        #             final_df.loc[mask, answer_column] = row['answer']                
-        # else:
-        #     raise NotImplementedError(
-        #         f"This question type is not implemented yet {question_type}"
-        #     )
     return pivoted_answers
 
 def get_or_create_questions_infos(client_name, questionnaire_id):
@@ -243,9 +129,13 @@ def get_or_create_questions_infos(client_name, questionnaire_id):
     return questions_infos_id
     
 
-def pivot_answers_to_column(list_of_answerers, question_informations, df_answers_to_question):
+def pivot_answers_to_column(list_of_answerers, question_infos, df_answers_to_question):
     pivoted_answers_to_question = list_of_answerers
-    question_title, question_type, position = question_informations
+    question_title, question_type, position = (
+        question_infos.question_title,
+        question_infos.question_type,
+        question_infos.position
+    )
     if question_type in ['short_answer', 'long_answer', 'single_option','files']:
         pivoted_answers_to_question = df_answers_to_question[['session_token', 'answer']]
         column_name = f'{position}. {question_title}'
@@ -253,15 +143,43 @@ def pivot_answers_to_column(list_of_answerers, question_informations, df_answers
             columns={'answer':column_name},
             inplace=True
         )
-    elif question_type in ['multiple_option']:
-        pivoted_answers_to_question
-    # elif question_type in ['matrix_single']:
-    #     pass
-    # elif question_type in ['matrix_multiple']:
-    #     pass
-    else:
-        print('not implemented yet')
-        # raise NotImplementedError(f"Not implemented yet: {question_type}")
+    elif question_type in ['multiple_option', 'matrix_single', 'matrix_multiple']:
+        if question_type == 'multiple_option':
+            filtering_column = 'answer'
+            wanted_sub_columns = question_infos.possible_answers
+        else:
+            filtering_column = 'sub_matrix_question'
+            wanted_sub_columns = question_infos.sub_affirmations
+        sub_affirmations = [
+            sub_affirmation.strip() for sub_affirmation in ast.literal_eval(wanted_sub_columns)
+        ]
+        for index, sub_affirmation in enumerate(sub_affirmations):
+            column_name = f'{position}. {question_title[:20]} - Affirmation {index}'
+            sub_affirmation_df = df_answers_to_question[
+                df_answers_to_question[filtering_column] == sub_affirmation
+            ][['session_token', 'answer']]
+            if question_type == 'matrix_multiple':
+                sub_affirmation_df = (
+                    sub_affirmation_df
+                        .set_index('session_token')
+                        .groupby(['session_token'])
+                        .transform(lambda x: ','.join(x))
+                        .drop_duplicates()
+                )
+            sub_affirmation_df.rename(
+                columns={'answer':column_name},
+                inplace=True
+            )
+            if question_type == 'multiple_option':
+                sub_affirmation_df[column_name] = (
+                    sub_affirmation_df[column_name].apply(lambda x: 'Oui')
+                )
+            
+            pivoted_answers_to_question = pivoted_answers_to_question.merge(
+                sub_affirmation_df,
+                how='left',
+                on='session_token'
+            )
 
     return pivoted_answers_to_question
 
