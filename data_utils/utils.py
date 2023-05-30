@@ -100,16 +100,6 @@ def to_snake(name):
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
 
 
-def parse_options(object):
-    values = (object.values.tolist()[0]).split('","')
-    values[0] = values[0][2:]
-    values[-1] = values[-1][:len(values[-1])-2]
-    for i in range(len(values)):
-        values[i] = values[i].replace('\\"', '"')
-        values[i] = values[i].strip(' ')
-    return values
-
-
 def get_database_connection():
     config = os.environ
     

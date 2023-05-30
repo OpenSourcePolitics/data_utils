@@ -1,10 +1,8 @@
 from data_utils.utils import (
-    parse_options,
     get_answer_model_id,
     MTB
 )
 import pandas as pd
-import os
 import ast
 
 
@@ -82,7 +80,10 @@ def pivot_answers(df_answers, df_questions_info, for_metabase):
 
     # For each question, retrieve the dataframe with the relevant columns
     for index, question_infos in questions_infos.iterrows():
-        df_answers_to_question = df_answers[df_answers['position'] == question_infos.position][ANSWERS_COLUMNS]
+        df_answers_to_question = (
+            df_answers[df_answers['position'] == question_infos.position]
+            [ANSWERS_COLUMNS]
+        )
 
         pivoted_answers_to_question = pivot_answers_to_column(
             pivoted_answers[['session_token']],
@@ -97,6 +98,7 @@ def pivot_answers(df_answers, df_questions_info, for_metabase):
         )
     return pivoted_answers
 
+
 def get_or_create_questions_infos(client_name, questionnaire_id):
     card_name = f'Questions - Questionnaire {questionnaire_id}'
     try:
@@ -105,21 +107,16 @@ def get_or_create_questions_infos(client_name, questionnaire_id):
         print("Questions infos card not existing")
 
         db_id = MTB.get_item_id('database', client_name)
+        request = open(
+            './data_utils/pivot_answers/request.sql'
+        ).read().replace('QUESTIONNAIRE_ID', str(questionnaire_id))
         questions_infos_id = MTB.create_card(
             custom_json={
                 'name': card_name,
                 'display': 'table',
                 'dataset_query': {
                     'database': db_id,
-                    'native': {
-                        'query': open(
-                            './data_utils/pivot_answers/request.sql',
-                            'r'
-                        ).read().replace(
-                            'QUESTIONNAIRE_ID',
-                            str(questionnaire_id)
-                        )
-                    },
+                    'native': {'query': request},
                     'type': 'native',
                 },
                 'collection_id': MTB.get_item_id('collection', client_name)
@@ -127,23 +124,31 @@ def get_or_create_questions_infos(client_name, questionnaire_id):
             return_card=True
         )['id']
     return questions_infos_id
-    
 
-def pivot_answers_to_column(list_of_answerers, question_infos, df_answers_to_question):
+
+def pivot_answers_to_column(
+        list_of_answerers, question_infos, df_answers_to_question
+        ):
     pivoted_answers_to_question = list_of_answerers
     question_title, question_type, position = (
         question_infos.question_title,
         question_infos.question_type,
         question_infos.position
     )
-    if question_type in ['short_answer', 'long_answer', 'single_option','files']:
-        pivoted_answers_to_question = df_answers_to_question[['session_token', 'answer']]
+    if question_type in [
+        'short_answer', 'long_answer', 'single_option', 'files'
+    ]:
+        pivoted_answers_to_question = df_answers_to_question[
+            ['session_token', 'answer']
+        ]
         column_name = f'{position}. {question_title}'
         pivoted_answers_to_question.rename(
-            columns={'answer':column_name},
+            columns={'answer': column_name},
             inplace=True
         )
-    elif question_type in ['multiple_option', 'matrix_single', 'matrix_multiple']:
+    elif question_type in [
+        'multiple_option', 'matrix_single', 'matrix_multiple'
+    ]:
         if question_type == 'multiple_option':
             filtering_column = 'answer'
             wanted_sub_columns = question_infos.possible_answers
@@ -151,30 +156,35 @@ def pivot_answers_to_column(list_of_answerers, question_infos, df_answers_to_que
             filtering_column = 'sub_matrix_question'
             wanted_sub_columns = question_infos.sub_affirmations
         sub_affirmations = [
-            sub_affirmation.strip() for sub_affirmation in ast.literal_eval(wanted_sub_columns)
+            sub_affirmation.strip()
+            for sub_affirmation
+            in ast.literal_eval(wanted_sub_columns)
         ]
+
         for index, sub_affirmation in enumerate(sub_affirmations):
-            column_name = f'{position}. {question_title[:20]} - Affirmation {index}'
+            column_name = (
+                f'{position}. {question_title[:20]} - Affirmation {index}'
+            )
             sub_affirmation_df = df_answers_to_question[
                 df_answers_to_question[filtering_column] == sub_affirmation
             ][['session_token', 'answer']]
             if question_type == 'matrix_multiple':
                 sub_affirmation_df = (
                     sub_affirmation_df
-                        .set_index('session_token')
-                        .groupby(['session_token'])
-                        .transform(lambda x: ','.join(x))
-                        .drop_duplicates()
+                    .set_index('session_token')
+                    .groupby(['session_token'])
+                    .transform(lambda x: ','.join(x))
+                    .drop_duplicates()
                 )
             sub_affirmation_df.rename(
-                columns={'answer':column_name},
+                columns={'answer': column_name},
                 inplace=True
             )
             if question_type == 'multiple_option':
                 sub_affirmation_df[column_name] = (
                     sub_affirmation_df[column_name].apply(lambda x: 'Oui')
                 )
-            
+
             pivoted_answers_to_question = pivoted_answers_to_question.merge(
                 sub_affirmation_df,
                 how='left',
@@ -186,18 +196,30 @@ def pivot_answers_to_column(list_of_answerers, question_infos, df_answers_to_que
 
 def get_column_name(question_informations):
     question_title, question_type, position = question_informations
-    if question_type in ['short_answer', 'long_answer', 'single_option','files']:
+    if question_type in [
+        'short_answer', 'long_answer', 'single_option', 'files'
+    ]:
         return f'{position}. {question_title}'
     # elif question_type in ['multiple_option']:
+
 
 def main():
     questionnaire_id = int(input("Enter ID of the targeted questionnaire: "))
     customer_name = input("Enter customer name: ")
 
     answer_model_id = get_answer_model_id(customer_name)
-    questions_info_id = get_or_create_questions_infos(customer_name, questionnaire_id)
-    for_metabase = True if input("For Metabase of not ?[y/N]: ") == 'y' else False
+    questions_info_id = get_or_create_questions_infos(
+        customer_name,
+        questionnaire_id
+    )
+    for_metabase = (
+        True if input("For Metabase of not ?[y/N]: ") == 'y' else False
+    )
 
-    df, df_questions_info = get_data(answer_model_id, questions_info_id, questionnaire_id)
+    df, df_questions_info = get_data(
+        answer_model_id,
+        questions_info_id,
+        questionnaire_id
+    )
     final_df = pivot_answers(df, df_questions_info, for_metabase)
     final_df.to_csv('file.csv', index=False)
