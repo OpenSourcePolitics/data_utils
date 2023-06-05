@@ -4,6 +4,7 @@ from data_utils.utils import (
 )
 import pandas as pd
 import ast
+from enum import Enum
 
 
 FILENAME = 'data'
@@ -17,6 +18,10 @@ ANSWERS_COLUMNS = [
 ]
 FOR_METABASE = True
 
+class Category(Enum):
+    SIMPLE = 1
+    COMPLEX = 2
+    SORTING = 3
 
 class Question:
     def __init__(self, type, position, title, **kwargs):
@@ -26,6 +31,17 @@ class Question:
         
         for k,v in kwargs.items():
             setattr(self, k, v)
+            
+        if self.type in [
+            'short_answer', 'long_answer', 'single_option', 'files'
+        ]:
+            self.category = Category.SIMPLE
+        elif self.type in [
+            'multiple_option', 'matrix_single', 'matrix_multiple'
+        ]:
+            self.category = Category.COMPLEX
+        elif self.type == 'sorting':
+            self.category = Category.SORTING
 
 
 # Recover answers data
@@ -148,9 +164,7 @@ def pivot_answers_to_column(
         ):
     pivoted_answers_to_question = list_of_answerers
 
-    if question.type in [
-        'short_answer', 'long_answer', 'single_option', 'files'
-    ]:
+    if question.category == Category.SIMPLE:
         pivoted_answers_to_question = df_answers_to_question[
             ['session_token', 'answer']
         ]
@@ -159,9 +173,7 @@ def pivot_answers_to_column(
             columns={'answer': column_name},
             inplace=True
         )
-    elif question.type in [
-        'multiple_option', 'matrix_single', 'matrix_multiple'
-    ]:
+    elif question.category == Category.COMPLEX:
         if question.type == 'multiple_option':
             filtering_column = 'answer'
             wanted_sub_columns = question.possible_answers
@@ -207,13 +219,13 @@ def pivot_answers_to_column(
     return pivoted_answers_to_question
 
 
-def get_column_name(question_informations):
-    question_title, question_type, position = question_informations
-    if question_type in [
-        'short_answer', 'long_answer', 'single_option', 'files'
-    ]:
+def get_column_name(question):
+    if question.category == Category.SIMPLE:
         return f'{position}. {question_title}'
-    # elif question_type in ['multiple_option']:
+    elif question.category == Category.COMPLEX:
+        return None
+    else:
+        raise NotImplementedError("Not implemented")
 
 
 def main():
