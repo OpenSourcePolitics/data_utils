@@ -55,6 +55,7 @@ class Question:
             ]
         elif self.type == 'sorting':
             self.category = Category.SORTING
+            raise NotImplementedError("Not implemented")
 
 
 # Recover answers data
@@ -142,7 +143,6 @@ def pivot_answers(df_answers, df_questions_infos, for_metabase):
             on='session_token'
         )
 
-    # Change value if 
     return pivoted_answers
 
 
@@ -193,9 +193,10 @@ def pivot_answers_to_column(question, df_answers_to_question):
                 f' {sub_affirmation}'
             )
             sub_affirmation_df = df_answers_to_question[
-                df_answers_to_question[question.filtering_column] == sub_affirmation
+                df_answers_to_question[question.filtering_column]
+                == sub_affirmation
             ][['session_token', 'answer']]
-            
+
             # If matrix_multiple, concat all answers in single column
             if question.type == 'matrix_multiple':
                 sub_affirmation_df = (
@@ -206,7 +207,10 @@ def pivot_answers_to_column(question, df_answers_to_question):
                     .drop_duplicates()
                 )
 
-            sub_affirmation_df.rename(columns={'answer': column_name}, inplace=True)
+            sub_affirmation_df.rename(
+                columns={'answer': column_name},
+                inplace=True
+            )
 
             if question.type == 'multiple_option':
                 sub_affirmation_df[column_name] = (
