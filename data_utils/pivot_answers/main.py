@@ -42,6 +42,17 @@ class Question:
             'multiple_option', 'matrix_single', 'matrix_multiple'
         ]:
             self.category = Category.COMPLEX
+            if self.type == 'multiple_option':
+                self.filtering_column = 'answer'
+                wanted_sub_columns = self.possible_answers
+            else:
+                self.filtering_column = 'sub_matrix_question'
+                wanted_sub_columns = self.sub_affirmations
+            self.sub_affirmations = [
+                sub_affirmation.strip()
+                for sub_affirmation
+                in ast.literal_eval(wanted_sub_columns)
+            ]
         elif self.type == 'sorting':
             self.category = Category.SORTING
 
@@ -130,6 +141,8 @@ def pivot_answers(df_answers, df_questions_infos, for_metabase):
             how='left',
             on='session_token'
         )
+
+    # Change value if 
     return pivoted_answers
 
 
@@ -170,31 +183,20 @@ def pivot_answers_to_column(question, df_answers_to_question):
             ['session_token', 'answer']
         ]
         column_name = f'{question.position}. {question.title}'
-        pivoted_answers_to_question.rename(
-            columns={'answer': column_name},
-            inplace=True
+        pivoted_answers_to_question = pivoted_answers_to_question.rename(
+            columns={'answer': column_name}
         )
     elif question.category == Category.COMPLEX:
-        if question.type == 'multiple_option':
-            filtering_column = 'answer'
-            wanted_sub_columns = question.possible_answers
-        else:
-            filtering_column = 'sub_matrix_question'
-            wanted_sub_columns = question.sub_affirmations
-        sub_affirmations = [
-            sub_affirmation.strip()
-            for sub_affirmation
-            in ast.literal_eval(wanted_sub_columns)
-        ]
-
-        for index, sub_affirmation in enumerate(sub_affirmations):
+        for index, sub_affirmation in enumerate(question.sub_affirmations):
             column_name = (
                 f'{question.position}. {question.title[:20]} -'
-                f' Affirmation {index}'
+                f' {sub_affirmation}'
             )
             sub_affirmation_df = df_answers_to_question[
-                df_answers_to_question[filtering_column] == sub_affirmation
+                df_answers_to_question[question.filtering_column] == sub_affirmation
             ][['session_token', 'answer']]
+            
+            # If matrix_multiple, concat all answers in single column
             if question.type == 'matrix_multiple':
                 sub_affirmation_df = (
                     sub_affirmation_df
@@ -203,10 +205,9 @@ def pivot_answers_to_column(question, df_answers_to_question):
                     .transform(lambda x: ','.join(x))
                     .drop_duplicates()
                 )
-            sub_affirmation_df.rename(
-                columns={'answer': column_name},
-                inplace=True
-            )
+
+            sub_affirmation_df.rename(columns={'answer': column_name}, inplace=True)
+
             if question.type == 'multiple_option':
                 sub_affirmation_df[column_name] = (
                     sub_affirmation_df[column_name].apply(lambda x: 'Oui')
