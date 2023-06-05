@@ -18,6 +18,7 @@ psycopg2 = "^2.9.6"
 openpyxl = "^3.1.2"
 citric = "^0.7.0"
 python-dotenv = "^1.0.0"
+doccano-client = "^1.2.7"
 
 [tool.poetry.scripts]
 # card_changer
@@ -39,6 +40,9 @@ pivot_answers = "data_utils.pivot_answers.main:main"
 
 # ls_import
 ls_import = "data_utils.ls_import.main:main"
+
+# doccano_import
+doccano_import = "data_utils.doccano_import.main:main"
 
 [tool.poetry.group.dev.dependencies]
 flake8 = "^6.0.0"

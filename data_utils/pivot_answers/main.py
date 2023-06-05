@@ -245,9 +245,9 @@ def main():
         questionnaire_id
     )
     for_metabase = True
-    # (
-    #     True if input("For Metabase of not ?[y/N]: ") == 'y' else False
-    # )
+    (
+        True if input("For Metabase of not ?[y/N]: ") == 'y' else False
+    )
 
     df, df_questions_info = get_data(
         answer_model_id,
