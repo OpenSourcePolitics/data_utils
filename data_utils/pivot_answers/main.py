@@ -18,6 +18,16 @@ ANSWERS_COLUMNS = [
 FOR_METABASE = True
 
 
+class Question:
+    def __init__(self, type, position, title, **kwargs):
+        self.type = type
+        self.position = position
+        self.title = title
+        
+        for k,v in kwargs.items():
+            setattr(self, k, v)
+
+
 # Recover answers data
 def get_data(answer_model_id, questions_info_id, form_id):
     # Get answers data
@@ -45,7 +55,7 @@ def get_data(answer_model_id, questions_info_id, form_id):
     df_questions_info = pd.DataFrame(
         MTB.get_card_data(card_id=questions_info_id)
     )
-    df_questions_info.rename(
+    df_questions_info = df_questions_info.rename(
         columns={
             'Titre de la question': 'question_title',
             'Type de question': 'question_type',
@@ -57,15 +67,10 @@ def get_data(answer_model_id, questions_info_id, form_id):
             # 'Points de tri': 'sorting_points',
             'Question sous-matricielle': 'sub_matrix_question',
             'ID du questionnaire': 'questionnaire_id'
-        },
-        inplace=True
+        }
     )
 
-    return df_answers, df_questions_info
-
-
-def pivot_answers(df_answers, df_questions_info, for_metabase):
-    questions_infos = df_questions_info[
+    df_questions_info = df_questions_info[
         [
             'position',
             'question_type',
@@ -75,19 +80,31 @@ def pivot_answers(df_answers, df_questions_info, for_metabase):
         ]
     ]
 
+    return df_answers, df_questions_info
+
+
+def pivot_answers(df_answers, df_questions_infos, for_metabase):
     # Final thing
     pivoted_answers = df_answers[['session_token']].drop_duplicates()
 
     # For each question, retrieve the dataframe with the relevant columns
-    for index, question_infos in questions_infos.iterrows():
+    for index, question_infos in df_questions_infos.iterrows():
         df_answers_to_question = (
             df_answers[df_answers['position'] == question_infos.position]
             [ANSWERS_COLUMNS]
         )
-
+        
+        question = Question(
+            question_infos.question_type,
+            question_infos.position,
+            question_infos.question_title,
+            possible_answers=question_infos.possible_answers,
+            sub_affirmations=question_infos.sub_affirmations
+        )
+        
         pivoted_answers_to_question = pivot_answers_to_column(
             pivoted_answers[['session_token']],
-            question_infos,
+            question,
             df_answers_to_question
         )
 
@@ -127,34 +144,30 @@ def get_or_create_questions_infos(client_name, questionnaire_id):
 
 
 def pivot_answers_to_column(
-        list_of_answerers, question_infos, df_answers_to_question
+        list_of_answerers, question, df_answers_to_question
         ):
     pivoted_answers_to_question = list_of_answerers
-    question_title, question_type, position = (
-        question_infos.question_title,
-        question_infos.question_type,
-        question_infos.position
-    )
-    if question_type in [
+
+    if question.type in [
         'short_answer', 'long_answer', 'single_option', 'files'
     ]:
         pivoted_answers_to_question = df_answers_to_question[
             ['session_token', 'answer']
         ]
-        column_name = f'{position}. {question_title}'
+        column_name = f'{question.position}. {question.title}'
         pivoted_answers_to_question.rename(
             columns={'answer': column_name},
             inplace=True
         )
-    elif question_type in [
+    elif question.type in [
         'multiple_option', 'matrix_single', 'matrix_multiple'
     ]:
-        if question_type == 'multiple_option':
+        if question.type == 'multiple_option':
             filtering_column = 'answer'
-            wanted_sub_columns = question_infos.possible_answers
+            wanted_sub_columns = question.possible_answers
         else:
             filtering_column = 'sub_matrix_question'
-            wanted_sub_columns = question_infos.sub_affirmations
+            wanted_sub_columns = question.sub_affirmations
         sub_affirmations = [
             sub_affirmation.strip()
             for sub_affirmation
@@ -163,12 +176,12 @@ def pivot_answers_to_column(
 
         for index, sub_affirmation in enumerate(sub_affirmations):
             column_name = (
-                f'{position}. {question_title[:20]} - Affirmation {index}'
+                f'{question.position}. {question.title[:20]} - Affirmation {index}'
             )
             sub_affirmation_df = df_answers_to_question[
                 df_answers_to_question[filtering_column] == sub_affirmation
             ][['session_token', 'answer']]
-            if question_type == 'matrix_multiple':
+            if question.type == 'matrix_multiple':
                 sub_affirmation_df = (
                     sub_affirmation_df
                     .set_index('session_token')
@@ -180,7 +193,7 @@ def pivot_answers_to_column(
                 columns={'answer': column_name},
                 inplace=True
             )
-            if question_type == 'multiple_option':
+            if question.type == 'multiple_option':
                 sub_affirmation_df[column_name] = (
                     sub_affirmation_df[column_name].apply(lambda x: 'Oui')
                 )
@@ -212,9 +225,10 @@ def main():
         customer_name,
         questionnaire_id
     )
-    for_metabase = (
-        True if input("For Metabase of not ?[y/N]: ") == 'y' else False
-    )
+    for_metabase = True
+    # (
+    #     True if input("For Metabase of not ?[y/N]: ") == 'y' else False
+    # )
 
     df, df_questions_info = get_data(
         answer_model_id,
