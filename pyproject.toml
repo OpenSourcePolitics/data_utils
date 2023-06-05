@@ -40,6 +40,9 @@ pivot_answers = "data_utils.pivot_answers.main:main"
 # ls_import
 ls_import = "data_utils.ls_import.main:main"
 
+[tool.poetry.group.dev.dependencies]
+flake8 = "^6.0.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

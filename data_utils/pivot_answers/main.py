@@ -18,20 +18,22 @@ ANSWERS_COLUMNS = [
 ]
 FOR_METABASE = True
 
+
 class Category(Enum):
     SIMPLE = 1
     COMPLEX = 2
     SORTING = 3
+
 
 class Question:
     def __init__(self, type, position, title, **kwargs):
         self.type = type
         self.position = position
         self.title = title
-        
-        for k,v in kwargs.items():
+
+        for k, v in kwargs.items():
             setattr(self, k, v)
-            
+
         if self.type in [
             'short_answer', 'long_answer', 'single_option', 'files'
         ]:
@@ -105,11 +107,6 @@ def pivot_answers(df_answers, df_questions_infos, for_metabase):
 
     # For each question, retrieve the dataframe with the relevant columns
     for index, question_infos in df_questions_infos.iterrows():
-        df_answers_to_question = (
-            df_answers[df_answers['position'] == question_infos.position]
-            [ANSWERS_COLUMNS]
-        )
-        
         question = Question(
             question_infos.question_type,
             question_infos.position,
@@ -117,9 +114,13 @@ def pivot_answers(df_answers, df_questions_infos, for_metabase):
             possible_answers=question_infos.possible_answers,
             sub_affirmations=question_infos.sub_affirmations
         )
-        
+
+        df_answers_to_question = (
+            df_answers[df_answers['position'] == question.position]
+            [ANSWERS_COLUMNS]
+        )
+
         pivoted_answers_to_question = pivot_answers_to_column(
-            pivoted_answers[['session_token']],
             question,
             df_answers_to_question
         )
@@ -159,10 +160,10 @@ def get_or_create_questions_infos(client_name, questionnaire_id):
     return questions_infos_id
 
 
-def pivot_answers_to_column(
-        list_of_answerers, question, df_answers_to_question
-        ):
-    pivoted_answers_to_question = list_of_answerers
+def pivot_answers_to_column(question, df_answers_to_question):
+    pivoted_answers_to_question = df_answers_to_question[
+        ['session_token']
+    ].drop_duplicates()
 
     if question.category == Category.SIMPLE:
         pivoted_answers_to_question = df_answers_to_question[
@@ -188,7 +189,8 @@ def pivot_answers_to_column(
 
         for index, sub_affirmation in enumerate(sub_affirmations):
             column_name = (
-                f'{question.position}. {question.title[:20]} - Affirmation {index}'
+                f'{question.position}. {question.title[:20]} -'
+                f' Affirmation {index}'
             )
             sub_affirmation_df = df_answers_to_question[
                 df_answers_to_question[filtering_column] == sub_affirmation
@@ -221,7 +223,7 @@ def pivot_answers_to_column(
 
 def get_column_name(question):
     if question.category == Category.SIMPLE:
-        return f'{position}. {question_title}'
+        return f'{question.position}. {question.title}'
     elif question.category == Category.COMPLEX:
         return None
     else:

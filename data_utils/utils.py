@@ -7,7 +7,11 @@ import re
 
 
 config = os.environ
-if not(config.get('METABASE_HOST') and config.get('METABASE_USERNAME') and config.get('METABASE_PASSWORD')):
+if not (
+    config.get('METABASE_HOST') and
+    config.get('METABASE_USERNAME') and
+    config.get('METABASE_PASSWORD')
+):
     raise AssertionError("Env variables not correctly set")
 
 MTB = Metabase_API(
@@ -102,9 +106,11 @@ def to_snake(name):
 
 def get_database_connection():
     config = os.environ
-    
+
     try:
-        db_host_and_port = f"{config['DATABASE_HOST']}:{config['DATABASE_PORT']}"
+        db_host_and_port = (
+            f"{config['DATABASE_HOST']}:{config['DATABASE_PORT']}"
+        )
         db_password = config['DATABASE_PASSWORD']
         db_username = config['DATABASE_USERNAME']
     except KeyError:
