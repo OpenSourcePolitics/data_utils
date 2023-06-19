@@ -18,7 +18,7 @@ psycopg2 = "^2.9.6"
 openpyxl = "^3.1.2"
 citric = "^0.7.0"
 python-dotenv = "^1.0.0"
-doccano-client = "^1.2.7"
+doccano-client = "1.2.7"
 
 [tool.poetry.scripts]
 # card_changer
