@@ -20,11 +20,11 @@ def get_data():
         
     return df
 
-def main(df=pd.DataFrame()):
-    connection, table_name, schema = get_database_connection()
+def main(df=pd.DataFrame(), db_name=None):
+    connection, schema, table = get_database_connection(db_name, db_schema_wanted='limesurvey')
     exported_df = df if not df.empty else get_data()
     exported_df.to_sql(
-        table_name,
+        table,
         connection,
         if_exists='replace',
         index=False
@@ -38,7 +38,7 @@ def main(df=pd.DataFrame()):
         print(
             f"Database {db_name} with ID {db_id} successfully synchronized, "
             f"you should now see the imported tables in the schema {schema} "
-            f" and table named {table_name}. "
+            f" and table named {table}. "
             f"Click here : {MTB.domain}/browse/{db_id}"
         )
     except Exception:

@@ -104,7 +104,7 @@ def to_snake(name):
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
 
 
-def get_database_connection():
+def get_database_connection(db_name, db_schema_wanted='public', table_name=None):
     config = os.environ
 
     try:
@@ -120,22 +120,15 @@ def get_database_connection():
         db_password = input("Enter Postgres database password: ")
         db_username = input("Enter Postgres database username: ")
 
-    db_name = input("Enter Postgres database name: ")
-    dbschema_wanted = (
-        input("Enter name of the wanted schema[default: public]: ")
-        or 'public'
-    )
-    table_name = (
-        input("Enter table_name(default : same as schema name): ")
-        or dbschema_wanted
-    )
+    db_name = db_name or input("Enter Postgres database name: ")
+    table_name = table_name or db_schema_wanted
 
     connection = sqlalchemy.create_engine(
         f"postgresql://{db_username}:{db_password}"
         f"@{db_host_and_port}"
         f"/{db_name}",
-        connect_args={'options': f'-csearch_path={dbschema_wanted},public'}
+        connect_args={'options': f'-csearch_path={db_schema_wanted},public'}
     )
 
     connection.connect()
-    return connection, table_name, dbschema_wanted
+    return connection, db_schema_wanted, table_name
