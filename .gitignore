@@ -5,3 +5,4 @@ __pycache__
 *.xlsx
 *.json
 data_utils/tmp_scripts/*.py
+data_utils.log

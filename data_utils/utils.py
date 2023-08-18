@@ -4,6 +4,7 @@ from requests import sessions
 import sqlalchemy
 import os
 import re
+import sys
 
 
 config = os.environ
@@ -104,7 +105,11 @@ def to_snake(name):
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
 
 
-def get_database_connection(db_name, db_schema_wanted='public', table_name=None):
+def get_database_connection(
+    db_name,
+    db_schema_wanted='public',
+    table_name=None
+):
     config = os.environ
 
     try:
@@ -132,3 +137,12 @@ def get_database_connection(db_name, db_schema_wanted='public', table_name=None)
 
     connection.connect()
     return connection, db_schema_wanted, table_name
+
+
+def log(message):
+    old_stdout = sys.stdout
+    log_file = open("data_utils.log", "w")
+    sys.stdout = log_file
+    print(message)
+    sys.stdout = old_stdout
+    log_file.close()

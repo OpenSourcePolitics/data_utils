@@ -1,6 +1,5 @@
-import sqlalchemy
 import pandas as pd
-from ..utils import MTB, get_database_connection
+from ..utils import MTB, get_database_connection, log
 
 
 def get_data():
@@ -17,11 +16,16 @@ def get_data():
         df = pd.read_json(file_name)
     else:
         raise NotImplementedError("None implemented error")
-        
+
     return df
 
-def main(df=pd.DataFrame(), db_name=None):
-    connection, schema, table = get_database_connection(db_name, db_schema_wanted='limesurvey')
+
+def main(df=pd.DataFrame(), db_name=None, db_schema_wanted='public'):
+    message = ""
+    connection, schema, table = get_database_connection(
+        db_name,
+        db_schema_wanted=db_schema_wanted
+    )
     exported_df = df if not df.empty else get_data()
     exported_df.to_sql(
         table,
@@ -29,19 +33,19 @@ def main(df=pd.DataFrame(), db_name=None):
         if_exists='replace',
         index=False
     )
-    print(f'Data successfully sent to Metabase to provided database')
+    message += "Data successfully sent to Metabase to provided database"
 
     try:
         db_name = connection.engine.url.database
         db_id = MTB.get_item_id('database', db_name)
         MTB.post(f'/api/database/{db_id}/sync_schema')
-        print(
+        message += (
             f"Database {db_name} with ID {db_id} successfully synchronized, "
             f"you should now see the imported tables in the schema {schema} "
             f" and table named {table}. "
             f"Click here : {MTB.domain}/browse/{db_id}"
         )
     except Exception:
-        print(f"No database found named {db_name}")
-    
-    
+        message += f"No database found named {db_name}"
+
+    log(message)
