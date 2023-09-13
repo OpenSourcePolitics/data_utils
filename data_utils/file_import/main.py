@@ -20,11 +20,12 @@ def get_data():
     return df
 
 
-def main(df=pd.DataFrame(), db_name=None, db_schema_wanted='public'):
+def main(df=pd.DataFrame(), db_name=None, db_schema_wanted='public', table_name='main'):
     message = ""
     connection, schema, table = get_database_connection(
         db_name,
-        db_schema_wanted=db_schema_wanted
+        db_schema_wanted=db_schema_wanted,
+        table_name=table_name
     )
     exported_df = df if not df.empty else get_data()
     exported_df.to_sql(

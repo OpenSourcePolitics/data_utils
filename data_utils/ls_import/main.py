@@ -37,4 +37,9 @@ def main():
         index_col="id",
     )
 
-    file_importer(df_answers, db_name=db_name, db_schema_wanted='public')
+    file_importer(
+        df_answers,
+        db_name=db_name,
+        db_schema_wanted='limesurvey',
+        table_name='limesurvey'
+    )
