@@ -61,8 +61,13 @@ class MetabaseQueryChecker:
             card_id = card['id']
             query_response = MTB.post(f"/api/card/{card_id}/query")
             status = query_response['status']
-            if status != 'completed':
-                card_map[card_id] = {'status': status}
+            if status == 'failed':
+                card_map[card_id] = {
+                    'status': status,
+                    'error_type': query_response['error_type'],
+                    'error': query_response['error']
+                }
+
 
         def runner():
             threads = []
@@ -80,7 +85,9 @@ class MetabaseQueryChecker:
             for card_id, infos in card_map.items():
                 message.append(
                     f"Card's of ID {card_id} status is {infos['status']}:"
-                    f"click here {MTB.domain}/card/{card_id} to correct"
+                    f"click here {MTB.domain}/card/{card_id} to correct\n"
+                    f"Error type: {infos['error_type']}\n"
+                    f"Error: {infos['error']}\n\n"
                 )
 
         return '\n'.join(message)
@@ -100,9 +107,10 @@ class MetabaseQueryChecker:
 
 
 def start():
-    collection_name = input("Enter collection name you want to analyze: ")
-
-    mb_qc = MetabaseQueryChecker(
-        MTB.get_item_id('collection', collection_name)
-    )
+    collection_value = input("Enter collection name or ID you want to analyze: ")
+    if collection_value.isdigit():
+        collection_id = int(collection_value)
+    else:
+        collection_id = MTB.get_item_id('collection', collection_value)
+    mb_qc = MetabaseQueryChecker(collection_id)
     mb_qc.check_queries()

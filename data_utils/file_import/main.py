@@ -21,6 +21,8 @@ def get_data():
 
 
 def main(df=pd.DataFrame(), db_name=None, db_schema_wanted='public', table_name='main'):
+    db_schema_wanted = input('Enter schema wanted: ')
+    table_name = input('Enter table name (if none, default is "main"): ') or table_name
     message = ""
     connection, schema, table = get_database_connection(
         db_name,

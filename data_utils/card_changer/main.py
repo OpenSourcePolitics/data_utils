@@ -22,8 +22,11 @@ def card_changer(element, path, custom_change=False):
             else:
                 modify_dict(res, path, element_id)
 
-            status_code = MTB.put(f'/api/card/{card_id}', json=res)
-            assert status_code == 200
+            try:
+                status_code = MTB.put(f'/api/card/{card_id}', json=res)
+                assert status_code == 200
+            except AssertionError as e:
+                import pdb; pdb.set_trace()
             print(f"card {card_id} changed successfully")
         else:
             break
@@ -34,7 +37,7 @@ def db_changer():
 
 
 def model_changer():
-    card_changer('model', ['dataset_query', 'query', 'source_table'])
+    card_changer('model', ['dataset_query', 'query', 'source-table'])
 
 
 def custom_changer():
