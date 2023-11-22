@@ -146,3 +146,28 @@ def log(message):
     print(message)
     sys.stdout = old_stdout
     log_file.close()
+
+def get_collection_cards(collection_name):
+    collection_id = MTB.get_item_id('collection', collection_name)
+    cards = MTB.get('/api/card', params={"f": "all"})
+    filtered_cards = []
+    # Filter cards to be analyzed
+    if collection_id:
+        filtered_cards = list(
+            filter(
+                lambda card: (
+                    str(collection_id) in dig(
+                        card,
+                        ['collection', 'location']
+                    ) or
+                    dig(
+                        card,
+                        ['collection', 'id']
+                    ) == collection_id
+                ),
+                cards
+            )
+        )
+    else:
+        filtered_cards = cards
+    return filtered_cards
