@@ -3,7 +3,7 @@ with all_questions as (
         id,
         position,
         question_type,
-        body->>'fr' as question_title
+        body::jsonb->>'fr' as question_title
     from decidim_forms_questions
     where decidim_questionnaire_id = QUESTIONNAIRE_ID
         and question_type != 'separator'
@@ -21,7 +21,7 @@ with all_questions as (
         '{}'::text[] as "sub_affirmations"
     from all_questions
         join decidim_forms_answer_options on decidim_forms_answer_options.decidim_question_id = all_questions.id,
-        lateral (select concat('', decidim_forms_answer_options.body->>'fr') as parsed_body) _
+        lateral (select concat(' ', decidim_forms_answer_options.body::jsonb->>'fr') as parsed_body) _
     where question_type like ANY('{multiple_option}'::text[])
     group by position, question_type, question_title, all_questions.id
 ), matrix_questions as (
@@ -32,8 +32,8 @@ with all_questions as (
     from all_questions
         join decidim_forms_answer_options on decidim_forms_answer_options.decidim_question_id = all_questions.id
         join decidim_forms_question_matrix_rows on decidim_forms_question_matrix_rows.decidim_question_id = all_questions.id,
-            lateral (select concat(' ', decidim_forms_answer_options.body->>'fr') as parsed_body) _,
-            lateral (select concat(' ', decidim_forms_question_matrix_rows.body->>'fr') as parsed_matrix_rows) __
+            lateral (select concat(' ', decidim_forms_answer_options.body::jsonb->>'fr') as parsed_body) _,
+            lateral (select concat(' ', decidim_forms_question_matrix_rows.body::jsonb->>'fr') as parsed_matrix_rows) __
     where question_type like ANY('{matrix_single, matrix_multiple}'::text[])
     group by all_questions.position, question_type, question_title, all_questions.id
 )
