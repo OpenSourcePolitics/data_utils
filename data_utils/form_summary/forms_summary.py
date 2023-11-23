@@ -106,8 +106,17 @@ class FormsSummary:
                     Fields([{'name': 'answer', 'type': 'type/Text'}])
                 )
 
-            elif question_type in ["single_option", "multiple_option"]:
+            elif question_type in ["single_option"]:
                 chart = PieChart(question_name, self)
+                chart.set_filters(chart_filter)
+                chart.set_aggregation(
+                    Aggregation(
+                        ['count'],
+                        Fields([{'name': 'answer', 'type': 'type/Text'}])
+                    )
+                )
+            elif question_type in ["multiple_option"]:
+                chart = BarChart(question_name, self)
                 chart.set_filters(chart_filter)
                 chart.set_aggregation(
                     Aggregation(
