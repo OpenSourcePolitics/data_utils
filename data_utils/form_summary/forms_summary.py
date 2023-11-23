@@ -194,6 +194,15 @@ class FormsSummary:
                     )
                 )
                 chart.set_order(Order('desc'))
+                chart.set_custom_params(
+                    [{
+                        "name": "visualization_settings",
+                        "value": {
+                            'graph.x_axis.labels_enabled': False,
+                            'graph.y_axis.labels_enabled': False
+                        }
+                    }]
+                )
             created_chart = chart.create_chart()
             chart_list.append([chart, created_chart])
         return chart_list
