@@ -105,7 +105,6 @@ class FormsSummary:
                 chart.set_fields(
                     Fields([{'name': 'answer', 'type': 'type/Text'}])
                 )
-
             elif question_type in ["single_option"]:
                 chart = PieChart(question_name, self)
                 chart.set_filters(chart_filter)
@@ -124,6 +123,7 @@ class FormsSummary:
                         Fields([{'name': 'answer', 'type': 'type/Text'}])
                     )
                 )
+                chart.set_order(Order('desc'))
                 chart.set_custom_params(
                     [{
                         "name": "visualization_settings",
@@ -150,6 +150,7 @@ class FormsSummary:
                         )
                     )
                 )
+                chart.set_order(Order('desc'))
                 chart.set_custom_params(
                     [{
                         "name": "visualization_settings",
