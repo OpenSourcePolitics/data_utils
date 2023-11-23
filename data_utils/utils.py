@@ -59,16 +59,14 @@ def send_rc_message(config, message, channel):
 
 
 def create_dashboard(name, collection_id):
-    res = MTB.post(
-        "/api/dashboard",
-        json={
-            'name': name,
-            'collection_id': collection_id,
-            'collection_position': 1
-        }
-    )
-
-    return res
+    data = {
+        'name': name,
+        'collection_id': collection_id,
+        'collection_position': 1
+    }
+    response = MTB.post("/api/dashboard", json=data)
+    print(f'Dashboard {response["name"]} created')
+    return response
 
 
 def add_cards_to_dashboard(dashboard, chart_list):
@@ -85,14 +83,14 @@ def add_cards_to_dashboard(dashboard, chart_list):
             'size_y': chart.size_y
         }
         cards_json['cards'].append(card_infos_for_dashboard)
-    import pdb; pdb.set_trace()
+
     res = MTB.put(
         f"/api/dashboard/{dashboard['id']}/cards",
         json=cards_json
     )
     assert res == 200
 
-    print(f"Cards added to dashboard {dashboard['id']}")
+    print(f"Cards added to dashboard {dashboard['id']}, see result here: {MTB.domain}/dashboard/{dashboard['id']}")
 
 
 def get_customer_collection_id(name):
