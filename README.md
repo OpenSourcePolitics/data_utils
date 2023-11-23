@@ -44,7 +44,7 @@ poetry run query_checker
 ```
 
 ### form_automation
-> Allows you to automatically all cards for a Decidim form on Metabase
+> Allows you to automatically add cards for a Decidim form on Metabase
 ```bash
 poetry run make_summary
 ```
