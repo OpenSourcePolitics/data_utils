@@ -123,6 +123,7 @@ class Chart:
             )
 
         chart = MTB.create_card(custom_json=self.params, return_card=True)
+        print(f'Chart created : {chart["name"]} with ID {chart["id"]}')
         return chart
 
     def set_filters(self, filter):

@@ -72,18 +72,27 @@ def create_dashboard(name, collection_id):
 
 
 def add_cards_to_dashboard(dashboard, chart_list):
+    cards_json = {'cards':[], 'ordered_tabs':[]}
+    counter = 0
     for chart, created_chart in chart_list:
-        res = MTB.post(
-            f"/api/dashboard/{dashboard['id']}/cards",
-            json={
-                'cardId': created_chart['id'],
-                'row': chart.row,
-                'col': chart.col,
-                'size_x': chart.size_x,
-                'size_y': chart.size_y
-            }
-        )
-        assert res is not False
+        counter -= 1
+        card_infos_for_dashboard = {
+            'id': counter,
+            'card_id': created_chart['id'],
+            'row': chart.row,
+            'col': chart.col,
+            'size_x': chart.size_x,
+            'size_y': chart.size_y
+        }
+        cards_json['cards'].append(card_infos_for_dashboard)
+    import pdb; pdb.set_trace()
+    res = MTB.put(
+        f"/api/dashboard/{dashboard['id']}/cards",
+        json=cards_json
+    )
+    assert res == 200
+
+    print(f"Cards added to dashboard {dashboard['id']}")
 
 
 def get_customer_collection_id(name):
