@@ -124,6 +124,15 @@ class FormsSummary:
                         Fields([{'name': 'answer', 'type': 'type/Text'}])
                     )
                 )
+                chart.set_custom_params(
+                    [{
+                        "name": "visualization_settings",
+                        "value": {
+                            'graph.x_axis.labels_enabled': False,
+                            'graph.y_axis.labels_enabled': False
+                        }
+                    }]
+                )
             elif question_type in ["matrix_single", "matrix_multiple"]:
                 chart = BarChart(question_name, self)
                 chart.set_filters(chart_filter)
@@ -149,7 +158,9 @@ class FormsSummary:
                                 "sub_matrix_question",
                                 "answer"
                             ],
-                            "graph.metrics": ["count"]
+                            "graph.metrics": ["count"],
+                            'graph.x_axis.labels_enabled': False,
+                            'graph.y_axis.labels_enabled': False
                         }
                     }]
                 )
