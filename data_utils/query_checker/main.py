@@ -2,7 +2,7 @@ from ..utils import MTB, send_rc_message, dig
 import progressbar
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
-
+import sys
 
 class MetabaseQueryChecker:
     def __init__(self, collection):
@@ -107,7 +107,11 @@ class MetabaseQueryChecker:
 
 
 def start():
-    collection_value = input("Enter collection name or ID you want to analyze: ")
+    if len(sys.argv) == 2:
+        collection_value = sys.argv[1]
+    else:
+        collection_value = input("Enter collection name or ID you want to analyze: ")
+
     if collection_value.isdigit():
         collection_id = int(collection_value)
     else:
