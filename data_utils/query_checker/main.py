@@ -27,43 +27,31 @@ class MetabaseQueryChecker:
     def query_parser(self):
         cards = MTB.get('/api/card', params={"f": "all"})
         filtered_cards = []
-        # Filter cards to be analyzed
+
         if self.collection:
-            filtered_cards = list(
-                filter(
-                    lambda card: (
-                        str(self.collection) in dig(
-                            card,
-                            ['collection', 'location']
-                        ) or
-                        dig(
-                            card,
-                            ['collection', 'id']
-                        ) == self.collection
-                    ),
-                    cards
-                )
-            )
+            filtered_cards = [
+                card for card in cards if
+                str(self.collection) in dig(card, ['collection', 'location']) or
+                dig(card, ['collection', 'id']) == self.collection
+            ]
         else:
             filtered_cards = cards
 
         message = [
-            f"Analyzing cards from {MTB.domain}",
-            f"{len(filtered_cards)} cards to be analyzed\n"
+            f"\nAnalyzing cards from {MTB.domain}",
+            f"\n{len(filtered_cards)} cards to be analyzed\n"
         ]
-        print(message)
+
         bar = self.create_progressbar(len(filtered_cards))
 
-        # Check if card is working
         card_map = {}
 
         def check_card(card):
             card_id = card['id']
             query_response = MTB.post(f"/api/card/{card_id}/query")
-            status = query_response['status']
-            if status == 'failed':
+            if query_response['status'] == 'failed':
                 card_map[card_id] = {
-                    'status': status,
+                    'status': query_response['status'],
                     'error_type': query_response['error_type'],
                     'error': query_response['error']
                 }
@@ -107,14 +95,9 @@ class MetabaseQueryChecker:
 
 
 def start():
-    if len(sys.argv) == 2:
-        collection_value = sys.argv[1]
-    else:
-        collection_value = input("Enter collection name or ID you want to analyze: ")
-
-    if collection_value.isdigit():
-        collection_id = int(collection_value)
-    else:
-        collection_id = MTB.get_item_id('collection', collection_value)
+    collection_value = (
+        sys.argv[1] if len(sys.argv) == 2 else input("Enter collection name or ID you want to analyze: ")
+    )
+    collection_id = int(collection_value) if collection_value.isdigit() else MTB.get_item_id('collection', collection_value)
     mb_qc = MetabaseQueryChecker(collection_id)
     mb_qc.check_queries()
