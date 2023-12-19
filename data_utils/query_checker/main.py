@@ -97,9 +97,8 @@ class MetabaseQueryChecker:
         print(message)
         try:
             send_rc_message(
-                self.config,
                 message,
-                self.config.ROCKETCHAT_CHANNEL
+                "dev"
             )
             print("Sending notification to Rocket.Chat worked!")
         except Exception:

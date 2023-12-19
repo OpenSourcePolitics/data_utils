@@ -5,6 +5,7 @@ import sqlalchemy
 import os
 import re
 import sys
+import pdb
 
 
 config = os.environ
@@ -40,15 +41,17 @@ def modify_dict(original_dict, keys_list, value):
     working_dict[keys_list[-1]] = value
 
 
-def send_rc_message(config, message, channel):
+def send_rc_message(message, channel):
+    config = os.environ
     assert config.get('ROCKETCHAT_USERNAME')
     assert config.get('ROCKETCHAT_PASSWORD')
     assert config.get('ROCKETCHAT_URL')
+
     with sessions.Session() as session:
         rocket = RocketChat(
-            config.ROCKETCHAT_USERNAME,
-            config.ROCKETCHAT_PASSWORD,
-            server_url=config.ROCKETCHAT_URL,
+            config.get('ROCKETCHAT_USERNAME'),
+            config.get('ROCKETCHAT_PASSWORD'),
+            server_url=config.get("ROCKETCHAT_URL"),
             session=session
         )
 
