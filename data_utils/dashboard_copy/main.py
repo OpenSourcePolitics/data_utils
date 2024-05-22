@@ -13,6 +13,8 @@ MESSAGE_DASHBOARD_ID = 'Enter dashboard id to be copied: '
 MESSAGE_COLLECTION_ID = 'Enter the collection id where the dashboard will be copied to: '
 MESSAGE_DASHBOARD_NAME = 'Enter the new dashboard name: '
 MESSAGE_DASHBOARD_DESCRIPTION = 'Optional - Enter the new dashboard description: '
+MESSAGE_DASHBOARD_ID_REPLACE_DB = 'Enter dashboard id: '
+MESSAGE_NEW_DB = "Enter the id of the database: "
 
 
 def get_dashboard(dashboard_id):
@@ -131,7 +133,7 @@ def update_dashboard(dashboard_id, dashboard):
         logging.error(f"Failed to update dashboard {dashboard_id}")
 
 def replace_dashboard_source_db():
-    dashboard_id = int(input(MESSAGE_DASHBOARD_ID))
+    dashboard_id = int(input(MESSAGE_DASHBOARD_ID_REPLACE_DB))
     dashboard = get_dashboard(dashboard_id)
     filtered_cards = filter_cards(dashboard)
     cards_df = pd.DataFrame(filtered_cards)
@@ -141,7 +143,7 @@ def replace_dashboard_source_db():
         cards_df = merge_cards_with_tables(cards_df, database_id)
         cards_df = update_cards_dataframe(cards_df)
     
-    db_id = int(input("Enter the id of the database: "))
+    db_id = int(input(MESSAGE_NEW_DB))
     tables_info = get_prod_tables_info(db_id)
     tables_df = pd.DataFrame(tables_info)
     cards_df = pd.merge(cards_df, tables_df, left_on='table_name', right_on='new_table_name', how='left')
