@@ -137,6 +137,7 @@ def replace_dashboard_source_db():
     dashboard = get_dashboard(dashboard_id)
     filtered_cards = filter_cards(dashboard)
     cards_df = pd.DataFrame(filtered_cards)
+    cards_df = cards_df.drop_duplicates()
     
     unique_database_ids = cards_df['database_id'].unique()
     for database_id in unique_database_ids:
