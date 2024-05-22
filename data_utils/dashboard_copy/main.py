@@ -57,22 +57,27 @@ def modify_card_dataset_query(card, db_id, new_table_id):
     modify_dict(card, ['dataset_query', 'database'], db_id)
     modify_dict(card, ['dataset_query', 'query', 'source-table'], new_table_id)
 
-
-def update_card_fields(card, card_id, old_table_id, new_table_id):
+def get_new_field_id(old_field_ids, old_table_id, new_table_id):
     old_table = MTB.get(f'/api/table/{old_table_id}/query_metadata')
     new_table = MTB.get(f'/api/table/{new_table_id}/query_metadata')
-    if not old_table or not new_table:
-        logging.error(f"Failed to fetch table metadata for card {card_id}")
+    if not old_table:
+        logging.error(f"Failed to fetch table metadata for table {old_table_id}")
         return
-    card_json_str = json.dumps(card)
-    field_ids_to_replace = extract_field_integers(card_json_str)
+    elif not new_table:
+        logging.error(f"Failed to fetch table metadata for table {new_table_id}")
+        return
     field_name_to_new_id = {field['name']: field['id'] for field in new_table['fields']}
     field_id_to_name = {field['id']: field['name'] for field in old_table['fields']}
-    #updated_field_ids = [field_name_to_new_id[field_id_to_name[field_id]] for field_id in field_ids_to_replace if field_id_to_name[field_id] in field_name_to_new_id]
-    
+    new_field_ids = {old_id: field_name_to_new_id[field_id_to_name[old_id]] for old_id in old_field_ids if old_id in field_id_to_name and field_id_to_name[old_id] in field_name_to_new_id}
+    return new_field_ids
 
+def update_card_fields(card, card_id, old_table_id, new_table_id):
+    card_json_str = json.dumps(card)
+    field_ids_to_replace = extract_field_integers(card_json_str)
+    new_field_ids = get_new_field_id(field_ids_to_replace, old_table_id, new_table_id)
+    
     for field_id in field_ids_to_replace:
-        card_json_str = re.sub(rf'"field",\s*{field_id}', f'"field", {field_name_to_new_id[field_id_to_name[field_id]]}', card_json_str)
+        card_json_str = re.sub(rf'"field",\s*{field_id}', f'"field", {new_field_ids[field_id]}', card_json_str)
     
     card = json.loads(card_json_str)
     return card
@@ -103,6 +108,27 @@ def extract_field_integers(json_str):
         field_values.append(int(match))
     field_values = list(set(field_values))
     return field_values
+def update_dashboard_filters(dashboard, table_id_mapping):
+    for dashcard in dashboard.get("dashcards", []):
+        if dashcard.get("parameter_mappings"):
+            new_table_id = dashcard.get("card", {}).get("table_id")
+            old_table_id = table_id_mapping.get(new_table_id)
+            for mapping in dashcard.get("parameter_mappings", []):
+                target_str = json.dumps(mapping.get("target"))
+                field_ids_to_replace = extract_field_integers(target_str)
+                new_field_ids = get_new_field_id(field_ids_to_replace, old_table_id, new_table_id)
+                for field_id in field_ids_to_replace:
+                    target_str = re.sub(rf'"field",\s*{field_id}', f'"field", {new_field_ids[field_id]}', target_str)
+                target = json.loads(target_str)
+                mapping["target"] = target
+    return dashboard        
+
+def update_dashboard(dashboard_id, dashboard):
+    response = MTB.put(f'/api/dashboard/{dashboard_id}', json=dashboard)
+    if response:
+        logging.info(f"Dashboard {dashboard_id} updated successfully.")
+    else:
+        logging.error(f"Failed to update dashboard {dashboard_id}")
 
 def replace_dashboard_source_db():
     dashboard_id = int(input(MESSAGE_DASHBOARD_ID))
@@ -121,11 +147,21 @@ def replace_dashboard_source_db():
     cards_df = pd.merge(cards_df, tables_df, left_on='table_name', right_on='new_table_name', how='left')
     print(cards_df)
     
+    # Iterate over each row in the cards dataframe
     for index, row in cards_df.iterrows():
+        # Get the card id, new table id and old table id from the current row
         card_id = row['id']
         new_table_id = row['new_table_id']
         old_table_id = row['old_table_id']
+        # Update the card in the database with the new table id
         update_card_db(card_id, db_id, old_table_id, new_table_id)
+    
+    # Create a mapping of new table ids to old table ids
+    table_id_mapping = {row['new_table_id']: row['old_table_id'] for index, row in cards_df.iterrows()}
+    dashboard = get_dashboard(dashboard_id)
+    # Finally update the dashboard filters
+    dashboard = update_dashboard_filters(dashboard, table_id_mapping)
+    update_dashboard(dashboard_id, dashboard)
 
 def dashboard_copy():
     try:
