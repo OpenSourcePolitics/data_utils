@@ -1,7 +1,6 @@
-from pprint import pprint
-from pdb import set_trace
+#from pprint import pprint
+#from pdb import set_trace
 from ..utils import MTB, modify_dict
-import pandas as pd
 import re
 import json
 import logging
@@ -15,45 +14,27 @@ MESSAGE_DASHBOARD_NAME = 'Enter the new dashboard name: '
 MESSAGE_DASHBOARD_DESCRIPTION = 'Optional - Enter the new dashboard description: '
 MESSAGE_DASHBOARD_ID_REPLACE_DB = 'Enter dashboard id: '
 MESSAGE_NEW_DB = "Enter the id of the database: "
+MESSAGE_SCHEMA = "Enter the schema: "
 
 
 def get_dashboard(dashboard_id):
     return MTB.get(f'/api/dashboard/{dashboard_id}')
 
-def filter_cards(dashboard):
+def get_all_db_ids(dashboard):
     if 'dashcards' in dashboard and isinstance(dashboard['dashcards'], list):
-        filtered_cards = []
-        for dashcard in dashboard['dashcards']:
-            if 'card' in dashcard and 'database_id' in dashcard['card']:
-                card = dashcard['card']
-                filtered_cards.append({
-                    'id': card['id'],
-                    'name': card['name'],
-                    'database_id': card['database_id'],
-                    'old_table_id': card.get('table_id', None)
-                })
-        return filtered_cards
+        return list(set([dashcard['card']['database_id'] for dashcard in dashboard['dashcards'] if 'card' in dashcard and 'database_id' in dashcard['card']]))
     return []
 
 def get_database_info(database_id):
     return MTB.get(f'/api/database/{database_id}?include=tables')
 
-def merge_cards_with_tables(cards, database_id):
+def get_tables_info(database_id, schema=None):
     database_info = get_database_info(database_id)
-    tables_info = [{'old_table_id': table['id'], 'table_name': table['name']} for table in database_info['tables']]
-    tables_df = pd.DataFrame(tables_info)
-    return pd.merge(cards, tables_df, on='old_table_id', how='left')
+    if schema: 
+        return [{'table_id': table['id'], 'table_name': table['name'], 'schema': table['schema']} for table in database_info['tables'] if table['schema'] == schema]
+    else: 
+        return [{'table_id': table['id'], 'table_name': table['name'], 'schema': table['schema']} for table in database_info['tables']]
 
-def update_cards_dataframe(cards_df):
-    if 'table_name_x' in cards_df.columns:
-        cards_df['table_name'] = cards_df['table_name_x'].combine_first(cards_df['table_name_y'])
-
-        cards_df.drop(['table_name_x', 'table_name_y'], axis=1, inplace=True)
-    return cards_df
-
-def get_prod_tables_info(database_id):
-    database_info = get_database_info(database_id)
-    return [{'new_table_id': table['id'], 'new_table_name': table['name']} for table in database_info['tables'] if table['schema'] == 'prod']
 
 def modify_card_dataset_query(card, db_id, new_table_id):
     modify_dict(card, ['dataset_query', 'database'], db_id)
@@ -110,20 +91,20 @@ def extract_field_integers(json_str):
         field_values.append(int(match))
     field_values = list(set(field_values))
     return field_values
-def update_dashboard_filters(dashboard, table_id_mapping):
-    for dashcard in dashboard.get("dashcards", []):
-        if dashcard.get("parameter_mappings"):
-            new_table_id = dashcard.get("card", {}).get("table_id")
-            old_table_id = table_id_mapping.get(new_table_id)
-            for mapping in dashcard.get("parameter_mappings", []):
-                target_str = json.dumps(mapping.get("target"))
-                field_ids_to_replace = extract_field_integers(target_str)
-                new_field_ids = get_new_field_id(field_ids_to_replace, old_table_id, new_table_id)
-                for field_id in field_ids_to_replace:
-                    target_str = re.sub(rf'"field",\s*{field_id}', f'"field", {new_field_ids[field_id]}', target_str)
-                target = json.loads(target_str)
-                mapping["target"] = target
-    return dashboard        
+
+def update_dashcard_filters(dashcard, table_id_mapping):
+    if dashcard.get("parameter_mappings"):
+        old_table_id = dashcard.get("card", {}).get("table_id")
+        new_table_id = table_id_mapping.get(old_table_id)
+        for mapping in dashcard.get("parameter_mappings", []):
+            target_str = json.dumps(mapping.get("target"))
+            field_ids_to_replace = extract_field_integers(target_str)
+            new_field_ids = get_new_field_id(field_ids_to_replace, old_table_id, new_table_id)
+            for field_id in field_ids_to_replace:
+                target_str = re.sub(rf'"field",\s*{field_id}', f'"field", {new_field_ids[field_id]}', target_str)
+            target = json.loads(target_str)
+            mapping["target"] = target
+    return dashcard 
 
 def update_dashboard(dashboard_id, dashboard):
     response = MTB.put(f'/api/dashboard/{dashboard_id}', json=dashboard)
@@ -133,38 +114,59 @@ def update_dashboard(dashboard_id, dashboard):
         logging.error(f"Failed to update dashboard {dashboard_id}")
 
 def replace_dashboard_source_db():
-    dashboard_id = int(input(MESSAGE_DASHBOARD_ID_REPLACE_DB))
+    dashboard_id = input(MESSAGE_DASHBOARD_ID_REPLACE_DB).strip()
+    if not dashboard_id.isdigit():
+        raise ValueError("The Dashboard ID must be a numeric value.")
+    dashboard_id = int(dashboard_id)
+
     dashboard = get_dashboard(dashboard_id)
-    filtered_cards = filter_cards(dashboard)
-    cards_df = pd.DataFrame(filtered_cards)
-    cards_df = cards_df.drop_duplicates()
     
-    unique_database_ids = cards_df['database_id'].unique()
-    for database_id in unique_database_ids:
-        cards_df = merge_cards_with_tables(cards_df, database_id)
-        cards_df = update_cards_dataframe(cards_df)
+    old_db_ids = get_all_db_ids(dashboard)
+    old_dbs = []
+    for db_id in old_db_ids:
+        old_dbs.append(
+            {
+                "db_id": db_id,
+                "tables": get_tables_info(db_id)
+            }
+        )
     
-    db_id = int(input(MESSAGE_NEW_DB))
-    tables_info = get_prod_tables_info(db_id)
-    tables_df = pd.DataFrame(tables_info)
-    cards_df = pd.merge(cards_df, tables_df, left_on='table_name', right_on='new_table_name', how='left')
-    print(cards_df)
+    new_db_id = input(MESSAGE_NEW_DB).strip()
+    if not new_db_id.isdigit():
+        raise ValueError("The Database ID must be a numeric value.")
+    new_db_id = int(new_db_id)
     
-    # Iterate over each row in the cards dataframe
-    for index, row in cards_df.iterrows():
-        # Get the card id, new table id and old table id from the current row
-        card_id = row['id']
-        new_table_id = row['new_table_id']
-        old_table_id = row['old_table_id']
-        # Update the card in the database with the new table id
-        update_card_db(card_id, db_id, old_table_id, new_table_id)
+    schema_name = input(MESSAGE_SCHEMA).strip()
+    if not schema_name:
+        raise ValueError("Schema Name is required.")
     
-    # Create a mapping of new table ids to old table ids
-    table_id_mapping = {row['new_table_id']: row['old_table_id'] for index, row in cards_df.iterrows()}
-    dashboard = get_dashboard(dashboard_id)
-    # Finally update the dashboard filters
-    dashboard = update_dashboard_filters(dashboard, table_id_mapping)
-    update_dashboard(dashboard_id, dashboard)
+    # we do table mapping
+    new_tables = get_tables_info(new_db_id, schema_name) 
+    table_id_mapping = {}
+    for db in old_dbs:
+        old_tables = db['tables']
+        for old_table in old_tables:
+            for new_table in new_tables:
+                if old_table['table_name'] == new_table['table_name'] and old_table['schema'] == new_table['schema']:
+                    table_id_mapping[old_table['table_id']] = new_table['table_id']
+    
+
+    if 'dashcards' in dashboard and isinstance(dashboard['dashcards'], list):
+        for dashcard in dashboard['dashcards']:
+            # Check if the dashcard contains a card
+            if 'card' in dashcard and 'database_id' in dashcard['card']:
+                updated_cards = []
+                card = dashcard["card"]
+                # We handle the cards that work without join
+                if card["table_id"] and card["id"] not in updated_cards: 
+                    old_table_id = card["table_id"]
+                    new_table_id = table_id_mapping[old_table_id]
+                    update_card_db(card["id"], new_db_id, old_table_id, new_table_id)
+                    updated_cards.append(card["id"])
+                # We handle the cards that work with a join
+                dashcard = update_dashcard_filters(dashcard, table_id_mapping)
+        update_dashboard(dashboard_id, dashboard)
+
 
 def dashboard_copy():
     try:
