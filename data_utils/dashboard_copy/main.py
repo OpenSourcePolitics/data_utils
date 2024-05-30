@@ -1,5 +1,3 @@
-#from pprint import pprint
-#from pdb import set_trace
 from ..utils import MTB, modify_dict
 import re
 import json
@@ -20,13 +18,16 @@ MESSAGE_SCHEMA = "Enter the schema: "
 def get_dashboard(dashboard_id):
     return MTB.get(f'/api/dashboard/{dashboard_id}')
 
+def get_database_info(database_id):
+    return MTB.get(f'/api/database/{database_id}?include=tables')
+
+def get_field_info(field_id):
+    return MTB.get(f'/api/field/{field_id}')
+
 def get_all_db_ids(dashboard):
     if 'dashcards' in dashboard and isinstance(dashboard['dashcards'], list):
         return list(set([dashcard['card']['database_id'] for dashcard in dashboard['dashcards'] if 'card' in dashcard and 'database_id' in dashcard['card']]))
     return []
-
-def get_database_info(database_id):
-    return MTB.get(f'/api/database/{database_id}?include=tables')
 
 def get_tables_info(database_id, schema=None):
     database_info = get_database_info(database_id)
@@ -35,12 +36,18 @@ def get_tables_info(database_id, schema=None):
     else: 
         return [{'table_id': table['id'], 'table_name': table['name'], 'schema': table['schema']} for table in database_info['tables']]
 
+def extract_field_integers(json_str):
+    field_values = []
+    matches = re.findall(r'"field",\s*(\d+)', json_str)
+    for match in matches:
+        field_values.append(int(match))
+    field_values = list(set(field_values))
+    return field_values
 
-def modify_card_dataset_query(card, db_id, new_table_id):
-    modify_dict(card, ['dataset_query', 'database'], db_id)
-    modify_dict(card, ['dataset_query', 'query', 'source-table'], new_table_id)
-
-def get_new_field_id(old_field_ids, old_table_id, new_table_id):
+def get_new_field_id(old_field_id, table_id_mapping):
+    field = get_field_info(old_field_id)
+    old_table_id = field['table']['id']
+    new_table_id = table_id_mapping[old_table_id]
     old_table = MTB.get(f'/api/table/{old_table_id}/query_metadata')
     new_table = MTB.get(f'/api/table/{new_table_id}/query_metadata')
     if not old_table:
@@ -51,30 +58,46 @@ def get_new_field_id(old_field_ids, old_table_id, new_table_id):
         return
     field_name_to_new_id = {field['name']: field['id'] for field in new_table['fields']}
     field_id_to_name = {field['id']: field['name'] for field in old_table['fields']}
-    new_field_ids = {old_id: field_name_to_new_id[field_id_to_name[old_id]] for old_id in old_field_ids if old_id in field_id_to_name and field_id_to_name[old_id] in field_name_to_new_id}
-    return new_field_ids
+    if old_field_id in field_id_to_name and field_id_to_name[old_field_id] in field_name_to_new_id:
+        new_field_id = field_name_to_new_id[field_id_to_name[old_field_id]]
+        return new_field_id
+    return None
 
-def update_card_fields(card, card_id, old_table_id, new_table_id):
-    card_json_str = json.dumps(card)
-    field_ids_to_replace = extract_field_integers(card_json_str)
-    new_field_ids = get_new_field_id(field_ids_to_replace, old_table_id, new_table_id)
-    
+def update_object_fields(object, table_id_mapping):
+    object_json_str = json.dumps(object)
+    field_ids_to_replace = extract_field_integers(object_json_str)
     for field_id in field_ids_to_replace:
-        card_json_str = re.sub(rf'"field",\s*{field_id}', f'"field", {new_field_ids[field_id]}', card_json_str)
-    
-    card = json.loads(card_json_str)
-    return card
+        new_field_id = get_new_field_id(field_id, table_id_mapping)
+        object_json_str = re.sub(rf'"field",\s*{field_id}', f'"field", {new_field_id}', object_json_str)
+    object = json.loads(object_json_str)
+    return object
 
-def update_card_db(card_id, db_id, old_table_id, new_table_id):
+def update_card_db(card_id, db_id, table_id_mapping):
     try:
         card_to_update = MTB.get(f'/api/card/{card_id}')
-        
         if not card_to_update:
             logging.error(f"Failed to fetch card {card_id}")
             return
         
-        modify_card_dataset_query(card_to_update, db_id, new_table_id)
-        card_to_update = update_card_fields(card_to_update, card_id, old_table_id, new_table_id)
+        modify_dict(card_to_update, ['dataset_query', 'database'], db_id)
+        
+        # We handle the cards that work with non SQL query
+        if card_to_update["query_type"] == "query":
+            old_table_id = card_to_update["table_id"]
+            new_table_id = table_id_mapping[old_table_id]
+            modify_dict(card_to_update, ['dataset_query', 'query', 'source-table'], new_table_id)
+            # If the cards work with joins :
+            if card_to_update["dataset_query"]["query"]["joins"]:
+                for join in card_to_update["dataset_query"]["query"]["joins"]:
+                    old_table_id = join["source-table"]
+                    new_table_id = table_id_mapping[old_table_id]
+                    modify_dict(join, ['source-table'], new_table_id)
+            card_to_update = update_object_fields(card_to_update, table_id_mapping)
+
+        # We handle the cards that work with a SQL query
+        elif card_to_update["query_type"] == "native":
+            print("SQL")
+            card_to_update["dataset_query"]["native"]["template-tags"] = update_object_fields(card_to_update["dataset_query"]["native"]["template-tags"], table_id_mapping)
         
         response = MTB.put(f'/api/card/{card_id}', json=card_to_update)
         if response:
@@ -84,26 +107,10 @@ def update_card_db(card_id, db_id, old_table_id, new_table_id):
     except Exception as e:
         logging.error(f"Unexpected error during card update: {str(e)}")
 
-def extract_field_integers(json_str):
-    field_values = []
-    matches = re.findall(r'"field",\s*(\d+)', json_str)
-    for match in matches:
-        field_values.append(int(match))
-    field_values = list(set(field_values))
-    return field_values
-
 def update_dashcard_filters(dashcard, table_id_mapping):
     if dashcard.get("parameter_mappings"):
-        old_table_id = dashcard.get("card", {}).get("table_id")
-        new_table_id = table_id_mapping.get(old_table_id)
         for mapping in dashcard.get("parameter_mappings", []):
-            target_str = json.dumps(mapping.get("target"))
-            field_ids_to_replace = extract_field_integers(target_str)
-            new_field_ids = get_new_field_id(field_ids_to_replace, old_table_id, new_table_id)
-            for field_id in field_ids_to_replace:
-                target_str = re.sub(rf'"field",\s*{field_id}', f'"field", {new_field_ids[field_id]}', target_str)
-            target = json.loads(target_str)
-            mapping["target"] = target
+            mapping["target"] = update_object_fields(mapping["target"], table_id_mapping)
     return dashcard 
 
 def update_dashboard(dashboard_id, dashboard):
@@ -122,14 +129,12 @@ def replace_dashboard_source_db():
     dashboard = get_dashboard(dashboard_id)
     
     old_db_ids = get_all_db_ids(dashboard)
-    old_dbs = []
-    for db_id in old_db_ids:
-        old_dbs.append(
-            {
-                "db_id": db_id,
-                "tables": get_tables_info(db_id)
-            }
-        )
+    if len(old_db_ids) > 1:
+        logging.error("Multiple database IDs found. This script does not support multiple source databases.")
+        return
+
+    old_db_id = old_db_ids[0]
+    old_tables = get_tables_info(old_db_id)
     
     new_db_id = input(MESSAGE_NEW_DB).strip()
     if not new_db_id.isdigit():
@@ -140,30 +145,24 @@ def replace_dashboard_source_db():
     if not schema_name:
         raise ValueError("Schema Name is required.")
     
-    # we do table mapping
+    # We build the tables mapping between new and old tables id
     new_tables = get_tables_info(new_db_id, schema_name) 
     table_id_mapping = {}
-    for db in old_dbs:
-        old_tables = db['tables']
-        for old_table in old_tables:
-            for new_table in new_tables:
-                if old_table['table_name'] == new_table['table_name'] and old_table['schema'] == new_table['schema']:
-                    table_id_mapping[old_table['table_id']] = new_table['table_id']
+    for old_table in old_tables:
+        for new_table in new_tables:
+            if old_table['table_name'] == new_table['table_name'] and old_table['schema'] == new_table['schema']:
+                table_id_mapping[old_table['table_id']] = new_table['table_id']
     
-
+    # If there are some dashcards in the dashboard, we update them
     if 'dashcards' in dashboard and isinstance(dashboard['dashcards'], list):
         for dashcard in dashboard['dashcards']:
             # Check if the dashcard contains a card
             if 'card' in dashcard and 'database_id' in dashcard['card']:
                 updated_cards = []
                 card = dashcard["card"]
-                # We handle the cards that work without join
-                if card["table_id"] and card["id"] not in updated_cards: 
-                    old_table_id = card["table_id"]
-                    new_table_id = table_id_mapping[old_table_id]
-                    update_card_db(card["id"], new_db_id, old_table_id, new_table_id)
+                if card["id"] not in updated_cards:
+                    update_card_db(card["id"], new_db_id, table_id_mapping)
                     updated_cards.append(card["id"])
-                # We handle the cards that work with a join
                 dashcard = update_dashcard_filters(dashcard, table_id_mapping)
         update_dashboard(dashboard_id, dashboard)
 
