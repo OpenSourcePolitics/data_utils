@@ -87,7 +87,7 @@ def update_card_db(card_id, db_id, table_id_mapping):
             new_table_id = table_id_mapping[old_table_id]
             modify_dict(card_to_update, ['dataset_query', 'query', 'source-table'], new_table_id)
             # If the cards work with joins :
-            if card_to_update["dataset_query"]["query"]["joins"]:
+            if card_to_update["dataset_query"]["query"].get("joins"):
                 for join in card_to_update["dataset_query"]["query"]["joins"]:
                     old_table_id = join["source-table"]
                     new_table_id = table_id_mapping[old_table_id]
@@ -96,7 +96,6 @@ def update_card_db(card_id, db_id, table_id_mapping):
 
         # We handle the cards that work with a SQL query
         elif card_to_update["query_type"] == "native":
-            print("SQL")
             card_to_update["dataset_query"]["native"]["template-tags"] = update_object_fields(card_to_update["dataset_query"]["native"]["template-tags"], table_id_mapping)
         
         response = MTB.put(f'/api/card/{card_id}', json=card_to_update)
@@ -155,10 +154,10 @@ def replace_dashboard_source_db():
     
     # If there are some dashcards in the dashboard, we update them
     if 'dashcards' in dashboard and isinstance(dashboard['dashcards'], list):
+        updated_cards = []
         for dashcard in dashboard['dashcards']:
             # Check if the dashcard contains a card
             if 'card' in dashcard and 'database_id' in dashcard['card']:
-                updated_cards = []
                 card = dashcard["card"]
                 if card["id"] not in updated_cards:
                     update_card_db(card["id"], new_db_id, table_id_mapping)
