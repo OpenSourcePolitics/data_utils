@@ -25,6 +25,10 @@ db_changer = 'data_utils.card_changer.main:db_changer'
 model_changer = 'data_utils.card_changer.main:model_changer'
 custom_changer = 'data_utils.card_changer.main:custom_changer'
 
+# dashboard_copy
+dashboard_copy = "data_utils.dashboard_copy.main:dashboard_copy"
+replace_dashboard_source_db = "data_utils.dashboard_copy.main:replace_dashboard_source_db"
+
 # query_checker
 query_checker = 'data_utils.query_checker.main:start'
 
