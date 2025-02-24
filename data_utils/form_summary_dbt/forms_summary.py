@@ -101,7 +101,7 @@ class FormsSummary:
             base_query = f"FROM prod.forms_answers WHERE decidim_questionnaire_id = {self.decidim_questionnaire_id} AND position = {position}"
 
             if question_type in ["short_answer", "long_answer"]:
-                query = f"SELECT answer {base_query} AND answer IS NOT NULL;"
+                query = f"SELECT answer {base_query} AND answer NOT LIKE '%Pas de réponse%';"
                 chart = TableChart(question_name, self, query=query)
 
             elif question_type in ["single_option"]:
