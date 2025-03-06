@@ -8,11 +8,11 @@ readme = "README.md"
 packages = [{include = "data_utils"}]
 
 [tool.poetry.dependencies]
-python = "^3.8.1"
+python = "^3.10.0"
 metabase-api = "^0.3.0"
 progressbar2 = "^4.2.0"
 rocketchat-api = "^1.30.0"
-pandas = "^2.0.1"
+pandas = "^2.2.3"
 sqlalchemy = "^2.0.13"
 psycopg2 = "^2.9.6"
 openpyxl = "^3.1.2"
@@ -30,6 +30,7 @@ query_checker = 'data_utils.query_checker.main:start'
 
 # form_summary
 make_summary = "data_utils.form_summary.main:make_summary"
+make_summary_dbt = "data_utils.form_summary_dbt.main:make_summary_dbt"
 
 # file import
 file_import = "data_utils.file_import.main:main"
