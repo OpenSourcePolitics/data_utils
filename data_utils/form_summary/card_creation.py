@@ -122,9 +122,14 @@ class Chart:
                 self.order.to_params()
             )
 
-        chart = MTB.create_card(custom_json=self.params, return_card=True)
-        print(f'Chart created : {chart["name"]} with ID {chart["id"]}')
-        return chart
+        try:
+            chart = MTB.create_card(custom_json=self.params, return_card=True)
+            print(f'Chart created : {chart["name"]} with ID {chart["id"]}')
+            return chart
+        except Exception as e:
+            print(f"self.params : {self.params}")
+            print(f"Error : {e}")
+            pass
 
     def set_filters(self, filter):
         assert isinstance(filter, Filter)

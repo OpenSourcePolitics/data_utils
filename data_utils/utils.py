@@ -73,16 +73,21 @@ def add_cards_to_dashboard(dashboard, chart_list):
     cards_json = {'cards':[], 'ordered_tabs':[]}
     counter = 0
     for chart, created_chart in chart_list:
-        counter -= 1
-        card_infos_for_dashboard = {
-            'id': counter,
-            'card_id': created_chart['id'],
-            'row': chart.row,
-            'col': chart.col,
-            'size_x': chart.size_x,
-            'size_y': chart.size_y
-        }
-        cards_json['cards'].append(card_infos_for_dashboard)
+        try:
+            counter -= 1
+            card_infos_for_dashboard = {
+                'id': counter,
+                'card_id': created_chart['id'],
+                'row': chart.row,
+                'col': chart.col,
+                'size_x': chart.size_x,
+                'size_y': chart.size_y
+            }
+            cards_json['cards'].append(card_infos_for_dashboard)
+        except Exception as e:
+            print(f"created_chart: {created_chart}")
+            print(f"error in add_cards_to_dashboard: {e}")
+            pass
 
     res = MTB.put(
         f"/api/dashboard/{dashboard['id']}/cards",

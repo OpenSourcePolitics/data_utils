@@ -75,7 +75,10 @@ class FormsSummary:
         import pandas as pd
         res = MTB.get_card_data(card_id=self.form_model_id)
         df = pd.DataFrame(res)
-
+        df.columns = (
+            df.columns.str.lower()
+            .str.replace(' ', '_')
+        )
         if self.language == 'fr':
             df = df[
                 ['Titre de la question', 'Type de question', 'Position']
