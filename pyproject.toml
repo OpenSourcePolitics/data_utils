@@ -32,6 +32,9 @@ query_checker = 'data_utils.query_checker.main:start'
 make_summary = "data_utils.form_summary.main:make_summary"
 make_summary_dbt = "data_utils.form_summary_dbt.main:make_summary_dbt"
 
+# form_filtering
+make_form_filters = "data_utils.form_summary.form_filtering:make_form_filters"
+
 # file import
 file_import = "data_utils.file_import.main:main"
 

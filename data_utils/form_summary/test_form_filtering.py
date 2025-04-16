@@ -18,7 +18,7 @@ class TestDataframeProcessing(unittest.TestCase):
         """Test that the form_answers dataframe is correctly pivoted and aggregated."""
         form_filters = answers_to_filters(self.mapping_raw)
 
-        expected_columns = ['1._qu_avez-vous_contre_les_caractères_spéciaux_?', '2. pourquoi_?', '3. pourquoi_?']
+        expected_columns = ['session_token','1._qu_avez-vous_contre_les_caractères_spéciaux_?', '2. pourquoi_?', '3. pourquoi_?']
         self.assertEqual(list(form_filters.columns), expected_columns)
 
 if __name__ == '__main__':
