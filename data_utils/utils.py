@@ -103,7 +103,7 @@ def get_customer_collection_id(name):
 
 
 def get_answer_model_id(
-    customer_name, model_name='Réponses aux questionnaires'
+    customer_name, model_name
 ):
     models_collection = MTB.get_item_id(
         'collection',

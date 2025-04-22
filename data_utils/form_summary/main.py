@@ -6,11 +6,11 @@ from ..utils import (
     get_answer_model_id
 )
 
-
 def make_summary():
     customer_collection_name = input("Enter name of the customer collection: ")
     form_id = int(input("Enter ID of the Decidim form: "))
     form_name = input("Enter name of the form (used for dashboard creation): ")
+    model_name = input("Enter name of the model created using make_form_filters (if any): ") or 'Réponses aux questionnaires'
     lang = (
         input("Enter language of the customer[fr/en; default is fr]: ") or 'fr'
     )
