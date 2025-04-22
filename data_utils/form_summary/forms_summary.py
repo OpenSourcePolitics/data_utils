@@ -81,7 +81,7 @@ class FormsSummary:
         )
         if self.language == 'fr':
             df = df[
-                ['Titre de la question', 'Type de question', 'Position']
+                ['titre_de_la_question', 'type_de_question', 'position']
             ].drop_duplicates()
         elif self.language == 'en':
             df = df[
