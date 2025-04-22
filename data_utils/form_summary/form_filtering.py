@@ -58,7 +58,7 @@ def retrieve_form_answers(questionnaire_id, engine):
     connection.close()
 
     if form_answers.empty:
-        raise AssertionError(f"No questionnaire found for {db_name} with id {questionnaire_id}")
+        raise AssertionError(f"No questionnaire found with id {questionnaire_id}")
     
     return form_answers
 
@@ -69,7 +69,7 @@ def answers_to_filters(form_answers):
     
     form_answers['filter_name'] = form_answers['position'].astype(str) + '. ' + form_answers['question_title']
     form_filters = form_answers.pivot(index='session_token', columns='filter_name', values='answer')
-    form_filters.columns=form_filters.columns.str.lower().str.replace(' ','_')
+    form_filters.columns=form_filters.columns.str.lower().str.replace(' ','_').str.replace("'","_")
     form_filters=form_filters.reset_index()
 
     return form_filters
