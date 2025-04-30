@@ -43,9 +43,8 @@ def connect_to_postgres(engine):
 def retrieve_form_answers(questionnaire_id, engine):
     query = f"""
                 SELECT 
-                    session_token,
+                    body,
                     question_type,
-                    question_title,
                     answer,
                     decidim_questionnaire_id,
                     position
@@ -62,9 +61,19 @@ def retrieve_form_answers(questionnaire_id, engine):
     
     return form_answers
 
+def concat_multiple_answers(form_answers):
+    "Concatenates multiple answers per question into a single answer"
 
+    df = form_answers.copy()
 
-def answers_to_filters(form_answers):
+    df['answer'] = df.\
+        groupby(['session_token', 'position'])['answer'].\
+        transform(lambda x : ' '.join(x))
+    df = df.drop_duplicates(subset=['session_token', 'position', 'answer'])
+
+    return df
+
+def pivot_filters(form_answers):
     "Pivots a form_answers dataframe in order to generate a table to use in Metabase as questionnaire filters"
     
     form_answers['filter_name'] = form_answers['position'].astype(str) + '. ' + form_answers['question_title']
@@ -91,6 +100,8 @@ def fetch_and_dump(db_name, questionnaire_id):
 
     form_answers = retrieve_form_answers(questionnaire_id, engine)
 
-    form_filters = answers_to_filters(form_answers)
+    form_unique_answers = concat_multiple_answers(form_answers)
+
+    form_filters = pivot_filters(form_unique_answers)
 
     dump_df_to_postgresql(questionnaire_id, engine, form_filters)
