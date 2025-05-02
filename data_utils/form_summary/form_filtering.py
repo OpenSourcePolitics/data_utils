@@ -43,8 +43,9 @@ def connect_to_postgres(engine):
 def retrieve_form_answers(questionnaire_id, engine):
     query = f"""
                 SELECT 
-                    body,
+                    session_token,
                     question_type,
+                    question_title,
                     answer,
                     decidim_questionnaire_id,
                     position
