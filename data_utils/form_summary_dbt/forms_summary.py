@@ -92,8 +92,10 @@ class FormsSummary:
 
     def create_question_summary(self):
         chart_list = []
+        
+        sorted_questions = sorted(self.questions_parameters, key=lambda x: x[2])
 
-        for question in self.questions_parameters:
+        for question in sorted_questions:
             question_title, question_type, position = question
             chart = None
             question_name = f"{position}. {question_title}"
