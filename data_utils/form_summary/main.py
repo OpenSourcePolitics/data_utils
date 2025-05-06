@@ -16,7 +16,7 @@ def make_summary():
     )
 
     collection_id = get_customer_collection_id(customer_collection_name)
-    answer_model_id = get_answer_model_id(customer_collection_name)
+    answer_model_id = get_answer_model_id(customer_collection_name, model_name)
 
     credentials = {
         'FORM_ID': form_id,
