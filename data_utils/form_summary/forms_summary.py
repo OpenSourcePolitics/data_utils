@@ -10,6 +10,30 @@ from .card_creation import (
 )
 from ..utils import MTB
 
+def clean_and_prepare_dataframe(df, lang):
+    df.columns = (
+        df.columns.str.lower()
+        .str.replace(' ', '_')
+    )
+    if lang == 'fr':
+        df['has_custom_body'] = df['corps_personnalisé'].notna()
+        df = df[
+            ['titre_de_la_question', 'type_de_question', 'position', 'has_custom_body']
+        ].drop_duplicates()
+    elif lang == 'en':
+        df['has_custom_body'] = df['custom_body'].notna()
+        df = df[
+            ['question_title', 'question_type', 'position', 'has_custom_body']
+        ].drop_duplicates()
+    else:
+        raise NotImplementedError(
+            "Provided language is not implemented yet"
+        )
+    df = df.\
+        sort_values(by=['position', 'has_custom_body'], ascending=False).\
+        drop_duplicates(subset='position', keep='first').\
+        sort_values(by='position')
+    return df.values.tolist()
 
 class FormsSummary:
     def __init__(self, credentials):
@@ -32,7 +56,6 @@ class FormsSummary:
             name=credentials['FORM_NAME'],
             collection_id=self.collection_id
         )
-        self.get_questions_parameters()
 
     def get_database_id(self):
         self.database_id = MTB.get_item_info(
@@ -75,30 +98,15 @@ class FormsSummary:
         import pandas as pd
         res = MTB.get_card_data(card_id=self.form_model_id)
         df = pd.DataFrame(res)
-        df.columns = (
-            df.columns.str.lower()
-            .str.replace(' ', '_')
-        )
-        if self.language == 'fr':
-            df = df[
-                ['titre_de_la_question', 'type_de_question', 'position']
-            ].drop_duplicates()
-        elif self.language == 'en':
-            df = df[
-                ['question_title', 'question_type', 'position']
-            ].drop_duplicates()
-        else:
-            raise NotImplementedError(
-                "Provided language is not implemented yet"
-            )
 
-        self.questions_parameters = df.values.tolist()
+        return clean_and_prepare_dataframe(df, self.language)
 
     def create_question_summary(self):
         chart_list = []
-        for question in self.questions_parameters:
-            question_title, question_type, position = question
-            chart = None
+        questions_parameters = self.get_questions_parameters()
+        for question in questions_parameters:
+            question_title, question_type, position, has_custom_body = question
+            charts = []
             chart_filter = Filter('=', 'position', position)
             question_name = f"{position}. {question_title}"
             if question_type in ["short_answer", "long_answer"]:
@@ -108,7 +116,22 @@ class FormsSummary:
                 chart.set_fields(
                     Fields([{'name': 'answer', 'type': 'type/Text'}])
                 )
-            elif question_type in ["single_option"]:
+                charts.append(chart)
+            if question_type in ["single_option", "multiple_option"] and has_custom_body:
+                custom_body_question_name = question_name + " (champ libre)"
+                chart = TableChart(custom_body_question_name, self)
+                chart.set_filters(chart_filter)
+                chart.set_filters(Filter('!=', 'answer', 'Pas de réponse'))
+                # TODO: find how to create a "not empty" filter (https://discourse.metabase.com/t/api-how-to-create-a-not-empty-filter/234624)
+                #chart.set_filters(Filter('not-empty', 'custom_body', ''))
+                chart.set_fields(
+                    Fields([
+                        {'name': 'answer', 'type': 'type/Text'},
+                        {'name': 'custom_body', 'type': 'type/Text'}
+                        ])
+                )
+                charts.append(chart)
+            if question_type in ["single_option"]:
                 chart = PieChart(question_name, self)
                 chart.set_filters(chart_filter)
                 chart.set_aggregation(
@@ -117,7 +140,8 @@ class FormsSummary:
                         Fields([{'name': 'answer', 'type': 'type/Text'}])
                     )
                 )
-            elif question_type in ["multiple_option"]:
+                charts.append(chart)
+            if question_type in ["multiple_option"]:
                 chart = BarChart(question_name, self)
                 chart.set_filters(chart_filter)
                 chart.set_aggregation(
@@ -136,7 +160,8 @@ class FormsSummary:
                         }
                     }]
                 )
-            elif question_type in ["matrix_single", "matrix_multiple"]:
+                charts.append(chart)
+            if question_type in ["matrix_single", "matrix_multiple"]:
                 chart = BarChart(question_name, self)
                 chart.set_filters(chart_filter)
                 chart.set_aggregation(
@@ -168,7 +193,8 @@ class FormsSummary:
                         }
                     }]
                 )
-            elif question_type in ["files"]:
+                charts.append(chart)
+            if question_type in ["files"]:
                 chart = TableChart(question_name, self)
                 chart.set_filters(chart_filter)
                 chart.set_fields(
@@ -179,7 +205,8 @@ class FormsSummary:
                         ]
                     )
                 )
-            elif question_type in ["sorting"]:
+                charts.append(chart)
+            if question_type in ["sorting"]:
                 chart = HorizontalBarChart(question_name, self)
                 chart.set_filters(chart_filter)
                 chart.set_aggregation(
@@ -206,6 +233,8 @@ class FormsSummary:
                         }
                     }]
                 )
-            created_chart = chart.create_chart()
-            chart_list.append([chart, created_chart])
+                charts.append(chart)
+            for chart in charts:
+                created_chart = chart.create_chart()
+                chart_list.append([chart, created_chart])
         return chart_list
