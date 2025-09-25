@@ -2,7 +2,6 @@
 # jupyter:
 #   jupytext:
 #     default_lexer: ipython3
-#     formats: md:myst,py:percent
 #     text_representation:
 #       extension: .py
 #       format_name: percent
@@ -15,11 +14,13 @@
 # ---
 
 # %% [markdown]
+# ```
 #     _    ______     _____ ____ _____
 #    / \  |  _ \ \   / /_ _/ ___| ____|  _
 #   / _ \ | | | \ \ / / | | |   |  _|   (_)
 #  / ___ \| |_| |\ V /  | | |___| |___   _
 # /_/   \_\____/  \_/  |___\____|_____| (_)
+# ```
 #
 # Use jupytext to edit this python script as a notebook.
 # http://jupytext.readthedocs.io
@@ -55,6 +56,7 @@ def gr(query):
 
 
 # %%
+# list of all the past processes
 x = gr(
 """
 {
@@ -70,6 +72,21 @@ x = gr(
 """
 )
 x
+
+# %%
+# account information
+gr(
+"""
+        {
+      organization {
+        stats {
+          name
+          value
+        }
+      }
+    }
+"""
+)
 
 # %%
 pd.DataFrame(x["data"]["participatoryProcesses"])
