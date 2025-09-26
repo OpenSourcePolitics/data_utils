@@ -57,7 +57,7 @@ def gr(query):
 
 # %%
 # list of all the past processes
-x = gr(
+processes = gr(
 """
 {
   participatoryProcesses(filter: {publishedSince: "2018-01-01"}, order: {publishedAt: "asc"}) {
@@ -71,25 +71,24 @@ x = gr(
 }
 """
 )
-x
+processes
 
 # %%
 # account information
 gr(
 """
-        {
-      organization {
-        stats {
-          name
-          value
-        }
-      }
-    }
+{
+  metrics(names:["users"]) {
+    name
+    count
+    history { key value }
+  }
+}
 """
 )
 
 # %%
-pd.DataFrame(x["data"]["participatoryProcesses"])
+pd.DataFrame(processes["data"]["participatoryProcesses"])
 
 # %% [markdown]
 # We will focus on MMF, intergenerational fairness, youth dialogues and assembly pollinators
@@ -99,7 +98,8 @@ current_processes = [
     ("mmf", 67, ),
     ("intergenerational-fairness", 100),
     ("youth-policy-dialogues", 68),
-    ("young-citizens-assembly-pollinators",	133)
+    ("young-citizens-assembly-pollinators",	133),
+    ("tackling-hatred-in-society",	35)
 ]
 
 # %% [markdown]

@@ -31,9 +31,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from bokeh.plotting import figure, show
 from bokeh.io import output_notebook
-from bokeh.models import HoverTool, Legend
+from bokeh.models import HoverTool, Legend, ColumnDataSource
 from bokeh.layouts import column
 from bokeh.models.formatters import DatetimeTickFormatter
+from bokeh.transform import dodge
+import datetime
 output_notebook()
 
 # %%
@@ -63,23 +65,23 @@ load("data_2025/young-citizens-assembly-pollinators.csv")
 # %%
 load("data_2025/youth-policy-dialogues.csv")
 
+
 # %%
-# Group by date and count the number of proposals per day
-proposals_per_day = df.groupby(df['Created At'].dt.date).size()
-
-# Plot the evolution of the number of proposals
-plt.figure(figsize=(10, 6))
-plt.plot(proposals_per_day.index, proposals_per_day.values, marker='o', linestyle='-')
-plt.title('Evolution of the Number of Proposals Over Time')
-plt.xlabel('Date')
-plt.ylabel('Number of Proposals')
-plt.grid(True)
-plt.xticks(rotation=45)
-plt.tight_layout()
-
-# Display the plot
-plt.show()
-
+## Group by date and count the number of proposals per day
+#proposals_per_day = df.groupby(df['Created At'].dt.date).size()
+#
+## Plot the evolution of the number of proposals
+#plt.figure(figsize=(10, 6))
+#plt.plot(proposals_per_day.index, proposals_per_day.values, marker='o', linestyle='-')
+#plt.title('Evolution of the Number of Proposals Over Time')
+#plt.xlabel('Date')
+#plt.ylabel('Number of Proposals')
+#plt.grid(True)
+#plt.xticks(rotation=45)
+#plt.tight_layout()
+#
+## Display the plot
+#plt.show()
 
 # %%
 def display_cumulative_figure(df, title):
@@ -154,8 +156,6 @@ data = load("data_2025/mmf.csv")
 show(display_cumulative_figure(data, "Multiannual financal framework"))
 
 # %%
-data = load("data_2025/youth-policy-dialogues.csv")
-show(display_cumulative_figure(data, "Youth policy dialogues"))
 
 # %%
 data = load("data_2025/young-citizens-assembly-pollinators.csv")
@@ -164,5 +164,94 @@ show(display_cumulative_figure(data, "Pollinators"))
 # %%
 data = load("data_2025/intergenerational-fairness.csv")
 show(display_cumulative_figure(data, "Intergenerational fairness"))
+
+# %%
+data = load("data_2025/tackling-hatred-in-society.csv")
+# we want only the part after july 2024
+data = data[data["Created At"].dt.date > datetime.date(2024, 7, 1)]
+show(display_cumulative_figure(data, "Tackling Hatred"))
+
+# %%
+df = load("data_2025/youth-policy-dialogues.csv")
+# Grouper par date et calculer les statistiques journalières
+daily_propositions = df.groupby(df['Created At'].dt.date).size()
+daily_comments = df.groupby(df['Created At'].dt.date)['Comments'].sum()
+daily_endorsements = df.groupby(df['Created At'].dt.date)['Endorsements'].sum()
+
+# Créer un DataFrame avec toutes les statistiques
+daily_stats = pd.DataFrame({
+    'Date': daily_propositions.index,
+    'Propositions': daily_propositions.values,
+    'Commentaires': daily_comments.values,
+    'Endorsements': daily_endorsements.values
+})
+
+# Convertir les dates en chaînes pour l'axe des x
+daily_stats['Date_str'] = pd.to_datetime(daily_stats['Date']).dt.strftime('%B %Y')
+
+# Créer une source de données pour Bokeh
+source = ColumnDataSource(daily_stats)
+
+# Créer la figure
+p = figure(
+    x_range=daily_stats['Date_str'].tolist(),
+    title="Youth Policy Dialogues",
+    x_axis_label="Date",
+    y_axis_label="Number at each date",
+    width=800,
+    height=600,
+    toolbar_location="above"
+)
+
+# Largeur des barres
+bar_width = 0.25
+
+# Ajouter les rectangles (barres) avec décalage pour les grouper
+p.vbar(x=dodge('Date_str', -bar_width, range=p.x_range), 
+               top='Propositions', 
+               width=bar_width, 
+               source=source,
+               color="#1f77b4", 
+               legend_label="Propositions",
+               alpha=0.8)
+
+p.vbar(x=dodge('Date_str', 0.0, range=p.x_range), 
+               top='Commentaires', 
+               width=bar_width, 
+               source=source,
+               color="#ff7f0e", 
+               legend_label="Commentaires",
+               alpha=0.8)
+
+p.vbar(x=dodge('Date_str', bar_width, range=p.x_range), 
+               top='Endorsements', 
+               width=bar_width, 
+               source=source,
+               color="#2ca02c", 
+               legend_label="Endorsements",
+               alpha=0.8)
+
+# Configurer les outils de survol
+hover = HoverTool(tooltips=[
+    ("Date", "@Date_str"),
+    ("Propositions", "@Propositions"),
+    ("Commentaires", "@Commentaires"),
+    ("Endorsements", "@Endorsements")
+])
+
+p.add_tools(hover)
+
+# Configurer la légende
+p.legend.location = "top_right"
+p.legend.click_policy = "hide"
+
+# Améliorer l'apparence
+p.title.text_font_size = "16pt"
+p.xaxis.axis_label_text_font_size = "12pt"
+p.yaxis.axis_label_text_font_size = "12pt"
+
+
+# Afficher le graphique
+show(p)
 
 # %%
