@@ -88,7 +88,9 @@ gr(
 )
 
 # %%
-pd.DataFrame(processes["data"]["participatoryProcesses"])
+df = pd.DataFrame(processes["data"]["participatoryProcesses"])
+df["title"] = [x["translation"] for x in df["title"]]
+df
 
 # %% [markdown]
 # We will focus on MMF, intergenerational fairness, youth dialogues and assembly pollinators

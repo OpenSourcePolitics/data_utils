@@ -31,10 +31,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from bokeh.plotting import figure, show
 from bokeh.io import output_notebook
-from bokeh.models import HoverTool, Legend, ColumnDataSource
+from bokeh.models import HoverTool, Legend, ColumnDataSource, DaysTicker
 from bokeh.layouts import column
 from bokeh.models.formatters import DatetimeTickFormatter
 from bokeh.transform import dodge
+from bokeh.models import DatetimeTicker
+from bokeh.core.enums import DatetimeUnits
 import datetime
 output_notebook()
 
@@ -65,23 +67,6 @@ load("data_2025/young-citizens-assembly-pollinators.csv")
 # %%
 load("data_2025/youth-policy-dialogues.csv")
 
-
-# %%
-## Group by date and count the number of proposals per day
-#proposals_per_day = df.groupby(df['Created At'].dt.date).size()
-#
-## Plot the evolution of the number of proposals
-#plt.figure(figsize=(10, 6))
-#plt.plot(proposals_per_day.index, proposals_per_day.values, marker='o', linestyle='-')
-#plt.title('Evolution of the Number of Proposals Over Time')
-#plt.xlabel('Date')
-#plt.ylabel('Number of Proposals')
-#plt.grid(True)
-#plt.xticks(rotation=45)
-#plt.tight_layout()
-#
-## Display the plot
-#plt.show()
 
 # %%
 def display_cumulative_figure(df, title):
@@ -136,6 +121,15 @@ def display_cumulative_figure(df, title):
     p.scatter(daily_stats['Date'], daily_stats['Endorsements_cumul'],
              size=6, color="#2ca02c", alpha=0.7)
 
+    TICKERS = [
+        DaysTicker(days=[7])
+    ]
+    p.xaxis.ticker.tickers = TICKERS
+    p.xaxis.ticker = DatetimeTicker(
+        desired_num_ticks=20,  # Tous les 7 jours
+        #unit=DatetimeUnits.days
+    )
+
     # Configurer les outils de survol
     hover = HoverTool(tooltips=[
         ("Date", "@x{%F}"),
@@ -153,23 +147,25 @@ def display_cumulative_figure(df, title):
 
 # %%
 data = load("data_2025/mmf.csv")
-show(display_cumulative_figure(data, "Multiannual financal framework"))
+show(display_cumulative_figure(data, "A new European budget fit for our ambitions"))
 
 # %%
+data = load("data_2025/youth-policy-dialogues.csv")
+show(display_cumulative_figure(data, "Youth Policy Dialogues"))
 
 # %%
 data = load("data_2025/young-citizens-assembly-pollinators.csv")
-show(display_cumulative_figure(data, "Pollinators"))
+show(display_cumulative_figure(data, "Young Citizens Assembly on Pollinators"))
 
 # %%
 data = load("data_2025/intergenerational-fairness.csv")
-show(display_cumulative_figure(data, "Intergenerational fairness"))
+show(display_cumulative_figure(data, "Intergenerational Fairness"))
 
 # %%
 data = load("data_2025/tackling-hatred-in-society.csv")
 # we want only the part after july 2024
 data = data[data["Created At"].dt.date > datetime.date(2024, 7, 1)]
-show(display_cumulative_figure(data, "Tackling Hatred"))
+show(display_cumulative_figure(data, "Tackling Hatred in Society"))
 
 # %%
 df = load("data_2025/youth-policy-dialogues.csv")
