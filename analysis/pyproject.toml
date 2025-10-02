@@ -10,6 +10,7 @@ dependencies = [
     "jupytext>=1.17.3",
     "matplotlib>=3.10.6",
     "pandas>=2.3.2",
+    "polars",
     "requests>=2.32.5",
     "tqdm>=4.67.1",
 ]

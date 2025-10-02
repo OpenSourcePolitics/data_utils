@@ -26,10 +26,9 @@
 # http://jupytext.readthedocs.io
 
 # %%
-import pandas as pd
+import polars as pl
 import requests
 from tqdm import tqdm
-from itertools import count
 
 # %% [markdown]
 # **Step 1**: access the graphQL api of decidim.
@@ -88,8 +87,8 @@ gr(
 )
 
 # %%
-df = pd.DataFrame(processes["data"]["participatoryProcesses"])
-df["title"] = [x["translation"] for x in df["title"]]
+df = pl.DataFrame(processes["data"]["participatoryProcesses"])
+df = df.with_columns(title = pl.col("title").map_elements(lambda x: x["translation"]))
 df
 
 # %% [markdown]
@@ -127,14 +126,22 @@ query getProcessData($id: ID!, $after: String) {
                   text
                 }
               }
+              body {
+              	translations {
+                  locale
+                  text
+                }
+              }
               comments {
                 id
                 body
+                createdAt
               }
               endorsements {
                 id
               }
               createdAt
+              updatedAt
             }
           }
         }
@@ -144,32 +151,29 @@ query getProcessData($id: ID!, $after: String) {
 }
 """
 
-
-def fetch_data(process_id):
-    all_proposals = []
+def fetch_all_proposals(process_id):
     after_cursor = None
 
     headers = {
         "Content-Type": "application/json"
     }
 
-    for _ in tqdm(count()):
+
+    while True:
         json={'query': query, 'variables': {'id': process_id, 'after': after_cursor}}
         response = requests.post(URL, json=json, headers=headers)
         if response.status_code != 200:
-            print(f"Query failed to run by returning code of {response.status_code}. {response.text}")
-            return all_proposals
+            raise ValueError(f"Query failed to run by returning code of {response.status_code}. {response.text}")
 
 
         response_json = response.json()
         if not('data' in response_json and response_json['data']['participatoryProcess']):
-            print(f"Error in response JSON structure: {response_json}")
-            return all_proposals
+            raise ValueError(f"Error in response JSON structure: {response_json}")
 
         data = response_json['data']['participatoryProcess']
         if not (data and 'components' in data and data['components']):
             print(f"No components found in process {process_id}. Full response: {response_json}")
-            return all_proposals
+            continue
 
         non_null_components = [x for x in data["components"] if x]
 
@@ -178,58 +182,100 @@ def fetch_data(process_id):
             print("strange, list is not a singleton")
         proposals_data = non_null_components[0]['proposals']
         assert None not in proposals_data['edges']
-        all_proposals.extend(proposals_data['edges'])
+        for edge in proposals_data['edges']:
+            if edge["node"] is None:
+                continue
+            proposal = edge["node"]
+            yield proposal
+            
         page_info = proposals_data['pageInfo']
         if page_info['hasNextPage']:
             after_cursor = page_info['endCursor']
         else:
-            return all_proposals
+            return
 
-    return all_proposals
+
+# %%
+def get_text(element, default, lang="fr"):
+    if not element["translations"]:
+        return default
+    translations = element['translations']
+    title = next(
+        (t['text'] for t in translations if t['locale'] == lang),
+         default
+    )
+    return title
+
+def fetch_data(process_id):
+     # this table will contain records of all events that occur in the platform:
+    #  - proposal creation
+    #  - votes
+    #  - new comments
+    # 
+    # the type of an event can be either PROPOSAL, COMMENT or ENDORSEMENT
+    result = []
+
+    for proposal in tqdm(fetch_all_proposals(process_id)):
+        title = get_text(proposal["title"], "[No title]")
+        content = get_text(proposal["body"], "")
+        
+        proposal_id = proposal["id"]
+        result.append(
+            {
+                "Type": "PROPOSAL",
+                "Proposal_ID": proposal_id,
+                "Proposal_Title": title,
+                "Date": proposal["createdAt"],
+                "Content": content,
+            }
+        )
+        for comment in proposal["comments"]:
+            result.append(
+                {
+                    "Type": "COMMENT",
+                    "Proposal_ID": proposal_id,
+                    "Proposal_Title": title,
+                    "Date": comment["createdAt"],
+                    "Content": comment["body"]
+                }
+            )
+        for endorsement in proposal["endorsements"]:
+            result.append(
+                {
+                    "Type": "ENDORSEMENT",
+                    "Proposal_ID": proposal_id,
+                    "Proposal_Title": title,
+                    # IMPORTANT: we can't get the endorsement creation dates from the API,
+                    # so we will consider they are created when the proposal is.
+                    "Date": proposal["createdAt"],
+                }
+            )
+    return result
+
 
 # %%
 data = {}
 for (name, p_id) in current_processes:
     print(f"extracting {name}")
-    data[name] =  fetch_data(p_id)
-
-
-# %%
-def process_to_df(proposals):
-    rows = []
-    for edge in proposals:
-        proposal = edge['node']
-        if proposal is None:
-            continue
-        proposal_id = proposal['id']
-        # Get the French translation if available
-        title_translations = proposal['title']['translations']
-        title = next((t['text'] for t in title_translations if t['locale'] == 'fr'),
-                     "No title") if title_translations else "No title"
-        comments = len(proposal['comments'])
-        endorsements = len(proposal['endorsements'])
-        created_at = proposal['createdAt']
-        rows.append({
-            #'Process': process_name,
-            'Proposal ID': proposal_id,
-            'Title': title,
-            'Comments': comments,
-            'Endorsements': endorsements,
-            'Created At': created_at
-        })
-
-    return pd.DataFrame(rows)
-
+    data[name] =  pl.DataFrame(fetch_data(p_id))
 
 # %%
 for (name, _) in current_processes:
-    result = process_to_df(data[name])
-    print(result.describe())
-    result.to_csv(f"data_2025/{name}.csv", index=False)
+    df = data[name]
+    df = df.with_columns(pl.col("Date").str.to_datetime("%Y-%m-%dT%H:%M:%S%z"))
+    print(f"dataset `{name}`:")
+    print(df.head())
+    df.write_csv(f"data_2025/{name}.csv")
+
+# %%
+list(data.values())[0]
 
 # %% [markdown]
 # Janvier à Aout 2025
 #
 # Si possible aout à décembre
+
+# %%
+data["youth-policy-dialogues"]
 
 # %%
