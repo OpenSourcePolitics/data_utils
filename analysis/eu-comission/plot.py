@@ -1,7 +1,7 @@
 import marimo
 
 __generated_with = "0.16.5"
-app = marimo.App()
+app = marimo.App(width="medium")
 
 
 @app.cell
@@ -14,6 +14,7 @@ def _():
     from bokeh.models import ColumnDataSource
     from bokeh.transform import dodge
     from pathlib import Path
+    import os
     import datetime
 
     output_notebook()
@@ -26,6 +27,7 @@ def _():
         dodge,
         figure,
         mo,
+        os,
         pl,
         show,
     )
@@ -46,8 +48,6 @@ def _(mo):
 
     This is a [marimo](https://marimo.io) notebook.
     To edit it in the web interface, run `marimo edit eu-comission/plot.py`
-
-
     """
     )
     return
@@ -70,26 +70,16 @@ def _(pl):
 
 
 @app.cell
-def _(data_path, load):
-    load(data_path / "mmf.csv")
-    return
+def _(data_path, mo, os):
+    files = [f for f in os.listdir(data_path) if f.endswith("csv")]
+    picker1 = mo.ui.dropdown(files, value=files[0])
+    mo.md(f"select path: {picker1}")
+    return files, picker1
 
 
 @app.cell
-def _(data_path, load):
-    load(data_path / "intergenerational-fairness.csv")
-    return
-
-
-@app.cell
-def _(data_path, load):
-    load(data_path / "young-citizens-assembly-pollinators.csv")
-    return
-
-
-@app.cell
-def _(data_path, load):
-    load(data_path / "youth-policy-dialogues.csv")
+def _(data_path, load, picker1):
+    load(data_path / picker1.value)
     return
 
 
@@ -258,48 +248,21 @@ def _(bokeh, figure, pl):
 
 
 @app.cell
-def _(data_path, display_cumulative_figure, load, show):
-    _data = load(data_path / "mmf.csv")
+def _(files, mo):
+    picker2 = mo.ui.dropdown(files, value=files[0])
+    mo.md(f"select path: {picker2}")
+    return (picker2,)
+
+
+@app.cell
+def _(data_path, datetime, display_cumulative_figure, load, picker2, pl, show):
+    data = load(data_path / picker2.value)
+    show_endorsements = True
+    if picker2.value == "tackling-hatred-in-society.csv":
+        data = data.filter(pl.col("Date").dt.date() > datetime.date(2024, 7, 1))
+        show_endorsements = False
     show(
-        display_cumulative_figure(_data, "A new European budget fit for our ambitions")
-    )
-    return
-
-
-@app.cell
-def _(data_path, display_cumulative_figure, load, show):
-    _data = load(data_path / "youth-policy-dialogues.csv")
-    show(
-        display_cumulative_figure(
-            _data, "Youth Policy Dialogues", show_endorsements=False
-        )
-    )
-    return
-
-
-@app.cell
-def _(data_path, display_cumulative_figure, load, show):
-    _data = load(data_path / "young-citizens-assembly-pollinators.csv")
-    show(display_cumulative_figure(_data, "Young Citizens Assembly on Pollinators"))
-    return
-
-
-@app.cell
-def _(data_path, display_cumulative_figure, load, show):
-    _data = load(data_path / "intergenerational-fairness.csv")
-    show(display_cumulative_figure(_data, "Intergenerational Fairness"))
-    return
-
-
-@app.cell
-def _(data_path, datetime, display_cumulative_figure, load, pl, show):
-    _data = load(data_path / "tackling-hatred-in-society.csv")
-    # we want only the part after july 2024
-    _data = _data.filter(pl.col("Date").dt.date() > datetime.date(2024, 7, 1))
-    show(
-        display_cumulative_figure(
-            _data, "Tackling Hatred in Society", show_endorsements=False
-        )
+        display_cumulative_figure(data, "A new European budget fit for our ambitions", show_endorsements=show_endorsements)
     )
     return
 
