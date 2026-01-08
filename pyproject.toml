@@ -18,6 +18,7 @@ psycopg2 = "^2.9.6"
 openpyxl = "^3.1.2"
 citric = "^0.7.0"
 python-dotenv = "^1.0.0"
+pytest = "^8.3.5"
 
 [tool.poetry.scripts]
 # card_changer
